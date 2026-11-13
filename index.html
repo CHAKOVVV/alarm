@@ -1,0 +1,1100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#090d16" />
+  <title>PulseLoop — Smart Repeat Timer</title>
+  <style>
+    :root {
+      --bg-primary: #090d16;
+      --bg-card: rgba(17, 24, 39, 0.74);
+      --bg-glass: rgba(255, 255, 255, 0.045);
+      --border: rgba(255, 255, 255, 0.09);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent-2: #818cf8;
+      --success: #34d399;
+      --danger: #fb7185;
+      --warning: #fbbf24;
+      --ring-track: rgba(255, 255, 255, 0.07);
+      --radius-lg: 28px;
+      --radius-md: 16px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+      background-color: var(--bg-primary);
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
+    }
+
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-image:
+        radial-gradient(circle at 15% 15%, rgba(56, 189, 248, 0.14), transparent 45%),
+        radial-gradient(circle at 85% 85%, rgba(129, 140, 248, 0.14), transparent 45%);
+      padding: max(12px, env(safe-area-inset-top)) 16px max(12px, env(safe-area-inset-bottom));
+      transition: background-color 0.25s ease;
+    }
+
+    body.alarm-flash {
+      animation: bgFlash 0.45s ease-out 1;
+    }
+
+    @keyframes bgFlash {
+      0%, 100% { background-color: var(--bg-primary); }
+      40% { background-color: #1e293b; }
+    }
+
+    .app-shell {
+      width: 100%;
+      max-width: 470px;
+      height: 100%;
+      max-height: 860px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: clamp(10px, 1.8dvh, 20px);
+      background: var(--bg-card);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: clamp(18px, 2.8dvh, 28px) clamp(18px, 4.5vw, 28px);
+      box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55);
+      overflow-y: auto;
+      scrollbar-width: none;
+    }
+    .app-shell::-webkit-scrollbar { display: none; }
+
+    /* Header */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      font-weight: 700;
+      font-size: 1.08rem;
+      letter-spacing: -0.02em;
+    }
+
+    .brand-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      box-shadow: 0 0 12px var(--accent);
+    }
+
+    .status-pills {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .pill-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: var(--bg-glass);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 6px 11px;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .pill-btn.active {
+      color: var(--success);
+      border-color: rgba(52, 211, 153, 0.35);
+      background: rgba(52, 211, 153, 0.1);
+    }
+
+    /* Cycle Counter Banner */
+    .cycle-bar {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      background: var(--bg-glass);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 10px 16px;
+    }
+
+    .cycle-stat {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .cycle-stat.right {
+      align-items: flex-end;
+    }
+
+    .cycle-label {
+      font-size: 0.66rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+    }
+
+    .cycle-value {
+      font-size: 1.12rem;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      color: var(--text-main);
+    }
+
+    .cycle-value.highlight {
+      color: var(--accent);
+    }
+
+    .cycle-reset-btn {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 0.73rem;
+      font-weight: 600;
+      padding: 6px 12px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    .cycle-reset-btn:hover { color: var(--text-main); background: rgba(255, 255, 255, 0.12); }
+
+    /* Circular Timer Ring */
+    .ring-section {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 2px auto;
+      width: clamp(168px, 26dvh, 232px);
+      height: clamp(168px, 26dvh, 232px);
+      flex-shrink: 0;
+    }
+
+    .ring-svg {
+      width: 100%;
+      height: 100%;
+      transform: rotate(-90deg);
+    }
+
+    .ring-bg {
+      fill: none;
+      stroke: var(--ring-track);
+      stroke-width: 8;
+    }
+
+    .ring-progress {
+      fill: none;
+      stroke: url(#ringGradient);
+      stroke-width: 8;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 0.1s linear;
+    }
+
+    .ring-center {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 12px;
+    }
+
+    .time-display {
+      font-size: clamp(2rem, 5dvh, 2.75rem);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      font-variant-numeric: tabular-nums;
+      line-height: 1.05;
+    }
+
+    .timer-sub {
+      margin-top: 7px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .timer-sub.running { color: var(--accent); }
+    .timer-sub.ringing { color: var(--warning); }
+
+    /* Duration Config */
+    .config-panel {
+      display: flex;
+      flex-direction: column;
+      gap: clamp(10px, 1.5dvh, 14px);
+    }
+
+    .time-inputs {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .input-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: var(--bg-glass);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 8px 10px;
+      transition: border-color 0.2s;
+    }
+
+    .input-box:focus-within {
+      border-color: var(--accent);
+    }
+
+    .input-box label {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      margin-bottom: 3px;
+    }
+
+    .input-box input {
+      width: 100%;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text-main);
+      font-size: 1.18rem;
+      font-weight: 700;
+      text-align: center;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .input-box input:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    /* Presets */
+    .presets {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+    }
+
+    .preset-btn {
+      background: var(--bg-glass);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 0.76rem;
+      font-weight: 600;
+      padding: 8px 4px;
+      border-radius: 11px;
+      cursor: pointer;
+      transition: all 0.18s ease;
+    }
+
+    .preset-btn:hover:not(:disabled) {
+      color: var(--text-main);
+      border-color: rgba(56, 189, 248, 0.45);
+      background: rgba(56, 189, 248, 0.1);
+    }
+
+    .preset-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* Audio Row */
+    .audio-bar {
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      align-items: center;
+      gap: 10px;
+      background: var(--bg-glass);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 10px 14px;
+    }
+
+    .sound-select-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .sound-select {
+      width: 100%;
+      background: transparent;
+      border: none;
+      color: var(--text-main);
+      font-size: 0.82rem;
+      font-weight: 600;
+      outline: none;
+      cursor: pointer;
+    }
+    .sound-select option {
+      background: #0f172a;
+      color: var(--text-main);
+    }
+
+    .vol-wrap {
+      display: flex;
+      align-items: center;
+    }
+
+    .vol-slider {
+      width: 64px;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    .test-btn {
+      background: rgba(56, 189, 248, 0.14);
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      color: var(--accent);
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 6px 12px;
+      border-radius: 9px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .test-btn:active { transform: scale(0.96); }
+
+    /* Main Controls */
+    .controls {
+      display: grid;
+      grid-template-columns: 1fr 1.6fr 1fr;
+      gap: 12px;
+    }
+
+    .ctrl-btn {
+      border: none;
+      border-radius: 16px;
+      padding: clamp(12px, 1.8dvh, 15px) 10px;
+      font-size: 0.92rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: transform 0.14s ease, opacity 0.2s ease, background 0.2s ease;
+    }
+    .ctrl-btn:active:not(:disabled) { transform: scale(0.97); }
+    .ctrl-btn:disabled { opacity: 0.38; cursor: not-allowed; }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      color: #060b14;
+      box-shadow: 0 8px 24px rgba(56, 189, 248, 0.26);
+    }
+
+    .btn-primary.pause-mode {
+      background: linear-gradient(135deg, var(--warning), #f97316);
+      box-shadow: 0 8px 24px rgba(251, 191, 36, 0.24);
+    }
+
+    .btn-secondary {
+      background: var(--bg-glass);
+      border: 1px solid var(--border);
+      color: var(--text-main);
+    }
+
+    .btn-danger {
+      background: rgba(251, 113, 133, 0.12);
+      border: 1px solid rgba(251, 113, 133, 0.3);
+      color: var(--danger);
+    }
+
+    .footer-note {
+      text-align: center;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      opacity: 0.8;
+      line-height: 1.35;
+    }
+
+    @media (min-width: 640px) {
+      .app-shell {
+        height: auto;
+        min-height: 670px;
+        gap: 20px;
+      }
+      .vol-slider { width: 82px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app-shell">
+    <!-- Top Header -->
+    <header class="header">
+      <div class="brand">
+        <span class="brand-dot"></span>
+        <span>PulseLoop</span>
+      </div>
+      <div class="status-pills">
+        <button id="bgKeepAliveBtn" class="pill-btn active" title="Keeps mobile audio active across tabs">
+          ● BG Audio
+        </button>
+        <button id="wakeLockBtn" class="pill-btn" title="Keep screen awake while running">
+          ☀ Screen
+        </button>
+        <button id="notifyBtn" class="pill-btn" title="Enable cycle notifications">
+          🔔 Alert
+        </button>
+      </div>
+    </header>
+
+    <!-- Cycle Counter -->
+    <section class="cycle-bar">
+      <div class="cycle-stat">
+        <span class="cycle-label">Current Cycle</span>
+        <span class="cycle-value highlight" id="currentCycleEl">#1</span>
+      </div>
+      <button class="cycle-reset-btn" id="resetCyclesBtn" title="Reset completed cycles">Reset Count</button>
+      <div class="cycle-stat right">
+        <span class="cycle-label">Completed</span>
+        <span class="cycle-value" id="completedCyclesEl">0</span>
+      </div>
+    </section>
+
+    <!-- Circular Countdown -->
+    <section class="ring-section">
+      <svg class="ring-svg" viewBox="0 0 220 220">
+        <defs>
+          <linearGradient id="ringGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#38bdf8" />
+            <stop offset="100%" stop-color="#818cf8" />
+          </linearGradient>
+        </defs>
+        <circle class="ring-bg" cx="110" cy="110" r="98"></circle>
+        <circle class="ring-progress" id="ringProgress" cx="110" cy="110" r="98"></circle>
+      </svg>
+      <div class="ring-center">
+        <div class="time-display" id="timeDisplay">01:00</div>
+        <div class="timer-sub" id="statusText">Ready • Auto-Repeat</div>
+      </div>
+    </section>
+
+    <!-- Configuration -->
+    <section class="config-panel">
+      <div class="time-inputs">
+        <div class="input-box">
+          <label for="hoursInput">Hours</label>
+          <input type="number" id="hoursInput" min="0" max="99" value="0" inputmode="numeric" />
+        </div>
+        <div class="input-box">
+          <label for="minsInput">Minutes</label>
+          <input type="number" id="minsInput" min="0" max="59" value="1" inputmode="numeric" />
+        </div>
+        <div class="input-box">
+          <label for="secsInput">Seconds</label>
+          <input type="number" id="secsInput" min="0" max="59" value="0" inputmode="numeric" />
+        </div>
+      </div>
+
+      <div class="presets">
+        <button class="preset-btn" data-sec="30">30s</button>
+        <button class="preset-btn" data-sec="60">1m</button>
+        <button class="preset-btn" data-sec="180">3m</button>
+        <button class="preset-btn" data-sec="300">5m</button>
+        <button class="preset-btn" data-sec="1500">25m</button>
+      </div>
+
+      <div class="audio-bar">
+        <div class="sound-select-wrap">
+          <span>🔊</span>
+          <select id="soundProfile" class="sound-select" aria-label="Notification sound">
+            <option value="crispPing">Loud Crisp Ping</option>
+            <option value="singleGong">Rich Single Gong</option>
+            <option value="sharpBeep">Sharp Single Beep</option>
+          </select>
+        </div>
+        <div class="vol-wrap">
+          <input type="range" id="volumeSlider" class="vol-slider" min="0.2" max="1" step="0.05" value="1" aria-label="Volume" />
+        </div>
+        <button id="testSoundBtn" class="test-btn">Test</button>
+      </div>
+    </section>
+
+    <!-- Action Buttons -->
+    <section class="controls">
+      <button id="resetBtn" class="ctrl-btn btn-danger" disabled>Reset</button>
+      <button id="startPauseBtn" class="ctrl-btn btn-primary">▶ Start</button>
+      <button id="skipBtn" class="ctrl-btn btn-secondary" disabled>Skip ↻</button>
+    </section>
+
+    <div class="footer-note">
+      Plays one loud tone per cycle — even across mobile tabs.
+    </div>
+  </main>
+
+  <audio id="keepAliveAudio" loop playsinline></audio>
+  <audio id="alarmAudio" playsinline></audio>
+
+  <script>
+    (() => {
+      // ---------- DOM Elements ----------
+      const timeDisplay = document.getElementById('timeDisplay');
+      const statusText = document.getElementById('statusText');
+      const ringProgress = document.getElementById('ringProgress');
+      const currentCycleEl = document.getElementById('currentCycleEl');
+      const completedCyclesEl = document.getElementById('completedCyclesEl');
+      const resetCyclesBtn = document.getElementById('resetCyclesBtn');
+
+      const hoursInput = document.getElementById('hoursInput');
+      const minsInput = document.getElementById('minsInput');
+      const secsInput = document.getElementById('secsInput');
+      const presetBtns = document.querySelectorAll('.preset-btn');
+
+      const startPauseBtn = document.getElementById('startPauseBtn');
+      const resetBtn = document.getElementById('resetBtn');
+      const skipBtn = document.getElementById('skipBtn');
+
+      const soundProfileSelect = document.getElementById('soundProfile');
+      const volumeSlider = document.getElementById('volumeSlider');
+      const testSoundBtn = document.getElementById('testSoundBtn');
+
+      const bgKeepAliveBtn = document.getElementById('bgKeepAliveBtn');
+      const wakeLockBtn = document.getElementById('wakeLockBtn');
+      const notifyBtn = document.getElementById('notifyBtn');
+
+      const keepAliveAudio = document.getElementById('keepAliveAudio');
+      const alarmAudio = document.getElementById('alarmAudio');
+
+      // ---------- Ring Geometry ----------
+      const RADIUS = 98;
+      const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
+      ringProgress.style.strokeDasharray = `${CIRCUMFERENCE} ${CIRCUMFERENCE}`;
+      ringProgress.style.strokeDashoffset = '0';
+
+      // ---------- State ----------
+      let durationMs = 60_000;
+      let remainingMs = 60_000;
+      let targetEndTime = null;
+      let isRunning = false;
+      let isPaused = false;
+      let completedCycles = 0;
+      let bgKeepAliveEnabled = true;
+      let wakeLockSentinel = null;
+      let wakeLockWanted = false;
+      let notificationsEnabled = false;
+      let audioCtx = null;
+      let rafId = null;
+
+      // ---------- Web Worker for Background-Resilient Ticking ----------
+      const workerCode = `
+        let timer = null;
+        self.onmessage = (e) => {
+          if (e.data === 'start') {
+            if (timer) clearInterval(timer);
+            timer = setInterval(() => self.postMessage('tick'), 200);
+          } else if (e.data === 'stop') {
+            if (timer) clearInterval(timer);
+            timer = null;
+          }
+        };
+      `;
+      const workerBlob = new Blob([workerCode], { type: 'application/javascript' });
+      const tickWorker = new Worker(URL.createObjectURL(workerBlob));
+
+      tickWorker.onmessage = () => {
+        if (isRunning) checkTimerProgress();
+      };
+
+      // ---------- WAV Synthesis (Single Crisp Loud Tone) ----------
+      function encodeWav(samples, sampleRate = 44100) {
+        const buffer = new ArrayBuffer(44 + samples.length * 2);
+        const view = new DataView(buffer);
+
+        const writeString = (offset, str) => {
+          for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
+        };
+
+        writeString(0, 'RIFF');
+        view.setUint32(4, 36 + samples.length * 2, true);
+        writeString(8, 'WAVE');
+        writeString(12, 'fmt ');
+        view.setUint32(16, 16, true);
+        view.setUint16(20, 1, true);
+        view.setUint16(22, 1, true);
+        view.setUint32(24, sampleRate, true);
+        view.setUint32(28, sampleRate * 2, true);
+        view.setUint16(32, 2, true);
+        view.setUint16(34, 16, true);
+        writeString(36, 'data');
+        view.setUint32(40, samples.length * 2, true);
+
+        let offset = 44;
+        for (let i = 0; i < samples.length; i++, offset += 2) {
+          const s = Math.max(-1, Math.min(1, samples[i]));
+          view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+        }
+        return new Blob([buffer], { type: 'audio/wav' });
+      }
+
+      function buildSilentKeepAliveUrl() {
+        const sr = 22050;
+        const len = sr * 2;
+        const samples = new Float32Array(len);
+        for (let i = 0; i < len; i++) {
+          samples[i] = Math.sin(2 * Math.PI * 20 * (i / sr)) * 0.00015;
+        }
+        return URL.createObjectURL(encodeWav(samples, sr));
+      }
+
+      // Single, decisive loud sound (no repeating beeps)
+      const alarmUrls = {};
+      function buildSingleSoundWav(profile) {
+        const sr = 44100;
+        const durationSec = profile === 'singleGong' ? 0.85 : 0.55;
+        const len = Math.floor(sr * durationSec);
+        const samples = new Float32Array(len);
+
+        for (let i = 0; i < len; i++) {
+          const t = i / sr;
+          let val = 0;
+
+          if (profile === 'crispPing') {
+            // One bright, loud, unmistakable bell ping
+            const env = Math.min(1, t / 0.006) * Math.exp(-t * 6.5);
+            val = (
+              0.65 * Math.sin(2 * Math.PI * 1046.5 * t) +
+              0.38 * Math.sin(2 * Math.PI * 1567.98 * t) +
+              0.25 * Math.sin(2 * Math.PI * 2093 * t)
+            ) * env;
+          } else if (profile === 'singleGong') {
+            // One rich, full-bodied low-mid strike
+            const env = Math.min(1, t / 0.008) * Math.exp(-t * 4.0);
+            val = (
+              0.7 * Math.sin(2 * Math.PI * 523.25 * t) +
+              0.4 * Math.sin(2 * Math.PI * 783.99 * t) +
+              0.25 * Math.sin(2 * Math.PI * 1046.5 * t)
+            ) * env;
+          } else if (profile === 'sharpBeep') {
+            // One solid, punchy 0.35s tone
+            const beepDur = 0.35;
+            if (t < beepDur) {
+              const env = Math.min(1, t / 0.01) * Math.min(1, (beepDur - t) / 0.03);
+              val = (
+                0.7 * Math.sin(2 * Math.PI * 987.77 * t) +
+                0.35 * Math.sin(2 * Math.PI * 1480.0 * t)
+              ) * env;
+            }
+          }
+
+          // Gentle saturation for maximum speaker volume without harsh clipping
+          samples[i] = Math.tanh(val * 1.85);
+        }
+
+        return URL.createObjectURL(encodeWav(samples, sr));
+      }
+
+      keepAliveAudio.src = buildSilentKeepAliveUrl();
+      keepAliveAudio.volume = 0.02;
+
+      function refreshAlarmSource() {
+        const prof = soundProfileSelect.value;
+        if (!alarmUrls[prof]) alarmUrls[prof] = buildSingleSoundWav(prof);
+        alarmAudio.src = alarmUrls[prof];
+        alarmAudio.volume = parseFloat(volumeSlider.value);
+      }
+      refreshAlarmSource();
+
+      function ensureAudioContext() {
+        if (!audioCtx) {
+          const AC = window.AudioContext || window.webkitAudioContext;
+          if (AC) audioCtx = new AC();
+        }
+        if (audioCtx && audioCtx.state === 'suspended') {
+          audioCtx.resume().catch(() => {});
+        }
+      }
+
+      function playLoudSingleSound() {
+        const vol = parseFloat(volumeSlider.value);
+        const prof = soundProfileSelect.value;
+
+        // 1. Primary native <audio> playback (works reliably in mobile background tabs)
+        try {
+          alarmAudio.pause();
+          alarmAudio.currentTime = 0;
+          alarmAudio.volume = vol;
+          alarmAudio.play().catch(() => {});
+        } catch (_) {}
+
+        // 2. Single Web Audio API harmonic boost for extra punch when tab is active
+        try {
+          ensureAudioContext();
+          if (audioCtx) {
+            const now = audioCtx.currentTime;
+            const comp = audioCtx.createDynamicsCompressor();
+            const gain = audioCtx.createGain();
+            gain.gain.value = vol * 0.45;
+            comp.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            const osc = audioCtx.createOscillator();
+            const env = audioCtx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(
+              prof === 'singleGong' ? 523.25 : prof === 'sharpBeep' ? 987.77 : 1046.5,
+              now
+            );
+            env.gain.setValueAtTime(0.001, now);
+            env.gain.exponentialRampToValueAtTime(1.0, now + 0.01);
+            env.gain.exponentialRampToValueAtTime(0.001, now + 0.42);
+            osc.connect(env);
+            env.connect(comp);
+            osc.start(now);
+            osc.stop(now + 0.44);
+          }
+        } catch (_) {}
+
+        // 3. Single short vibration pulse (Android)
+        if ('vibrate' in navigator) {
+          navigator.vibrate(220);
+        }
+
+        // 4. Subtle single visual flash
+        document.body.classList.remove('alarm-flash');
+        void document.body.offsetWidth;
+        document.body.classList.add('alarm-flash');
+      }
+
+      function startKeepAlive() {
+        if (!bgKeepAliveEnabled) return;
+        ensureAudioContext();
+        keepAliveAudio.play().catch(() => {});
+        updateMediaSession();
+      }
+
+      function stopKeepAlive() {
+        keepAliveAudio.pause();
+      }
+
+      function updateMediaSession() {
+        if (!('mediaSession' in navigator)) return;
+        try {
+          navigator.mediaSession.metadata = new MediaMetadata({
+            title: `Cycle #${completedCycles + 1} • ${formatTime(remainingMs)}`,
+            artist: 'PulseLoop Repeat Timer',
+            album: isRunning ? 'Running (Auto-Repeat)' : 'Paused'
+          });
+          navigator.mediaSession.playbackState = isRunning ? 'playing' : 'paused';
+          navigator.mediaSession.setActionHandler('play', () => { if (!isRunning) startTimer(); });
+          navigator.mediaSession.setActionHandler('pause', () => { if (isRunning) pauseTimer(); });
+        } catch (_) {}
+      }
+
+      // ---------- Formatting & UI Sync ----------
+      function formatTime(ms) {
+        const totalSec = Math.max(0, Math.ceil(ms / 1000));
+        const h = Math.floor(totalSec / 3600);
+        const m = Math.floor((totalSec % 3600) / 60);
+        const s = totalSec % 60;
+        const pad = (n) => String(n).padStart(2, '0');
+        return h > 0 ? `${pad(h)}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
+      }
+
+      function readInputsToDuration() {
+        const h = Math.max(0, Math.min(99, parseInt(hoursInput.value || '0', 10) || 0));
+        const m = Math.max(0, Math.min(59, parseInt(minsInput.value || '0', 10) || 0));
+        const s = Math.max(0, Math.min(59, parseInt(secsInput.value || '0', 10) || 0));
+        hoursInput.value = h;
+        minsInput.value = m;
+        secsInput.value = s;
+
+        let total = (h * 3600 + m * 60 + s) * 1000;
+        if (total < 1000) {
+          total = 1000;
+          secsInput.value = 1;
+        }
+        durationMs = total;
+        remainingMs = total;
+        renderTimerDisplay();
+      }
+
+      function renderTimerDisplay() {
+        const formatted = formatTime(remainingMs);
+        timeDisplay.textContent = formatted;
+        document.title = isRunning ? `${formatted} (#${completedCycles + 1}) — PulseLoop` : 'PulseLoop — Smart Repeat Timer';
+
+        const progress = durationMs > 0 ? Math.max(0, Math.min(1, remainingMs / durationMs)) : 0;
+        ringProgress.style.strokeDashoffset = String(CIRCUMFERENCE * (1 - progress));
+
+        currentCycleEl.textContent = `#${completedCycles + 1}`;
+        completedCyclesEl.textContent = String(completedCycles);
+      }
+
+      function setInputsLocked(locked) {
+        hoursInput.disabled = locked;
+        minsInput.disabled = locked;
+        secsInput.disabled = locked;
+        presetBtns.forEach((b) => (b.disabled = locked));
+      }
+
+      // ---------- Core Timer Loop ----------
+      function checkTimerProgress() {
+        if (!isRunning || targetEndTime === null) return;
+
+        const now = Date.now();
+        if (now >= targetEndTime) {
+          const overdue = now - targetEndTime;
+          const cyclesPassed = 1 + Math.floor(overdue / durationMs);
+          completedCycles += cyclesPassed;
+          targetEndTime += cyclesPassed * durationMs;
+          remainingMs = Math.max(0, targetEndTime - now);
+
+          playLoudSingleSound();
+          sendCycleNotification(completedCycles);
+          updateMediaSession();
+
+          statusText.textContent = `Cycle #${completedCycles} Complete`;
+          statusText.className = 'timer-sub ringing';
+          setTimeout(() => {
+            if (isRunning) {
+              statusText.textContent = 'Running • Auto-Repeat';
+              statusText.className = 'timer-sub running';
+            }
+          }, 1400);
+        } else {
+          remainingMs = targetEndTime - now;
+        }
+
+        renderTimerDisplay();
+      }
+
+      function animationLoop() {
+        if (!isRunning) return;
+        checkTimerProgress();
+        rafId = requestAnimationFrame(animationLoop);
+      }
+
+      // ---------- Controls ----------
+      function startTimer() {
+        if (!isPaused) {
+          readInputsToDuration();
+        }
+        isRunning = true;
+        isPaused = false;
+        targetEndTime = Date.now() + remainingMs;
+
+        alarmAudio.load();
+        startKeepAlive();
+        if (wakeLockWanted) acquireWakeLock();
+
+        setInputsLocked(true);
+        resetBtn.disabled = false;
+        skipBtn.disabled = false;
+        startPauseBtn.textContent = '⏸ Pause';
+        startPauseBtn.classList.add('pause-mode');
+        statusText.textContent = 'Running • Auto-Repeat';
+        statusText.className = 'timer-sub running';
+
+        tickWorker.postMessage('start');
+        cancelAnimationFrame(rafId);
+        rafId = requestAnimationFrame(animationLoop);
+        renderTimerDisplay();
+      }
+
+      function pauseTimer() {
+        checkTimerProgress();
+        isRunning = false;
+        isPaused = true;
+        targetEndTime = null;
+
+        tickWorker.postMessage('stop');
+        cancelAnimationFrame(rafId);
+        stopKeepAlive();
+        releaseWakeLock();
+        updateMediaSession();
+
+        startPauseBtn.textContent = '▶ Resume';
+        startPauseBtn.classList.remove('pause-mode');
+        statusText.textContent = 'Paused';
+        statusText.className = 'timer-sub';
+        renderTimerDisplay();
+      }
+
+      function resetTimer() {
+        isRunning = false;
+        isPaused = false;
+        targetEndTime = null;
+
+        tickWorker.postMessage('stop');
+        cancelAnimationFrame(rafId);
+        stopKeepAlive();
+        releaseWakeLock();
+
+        setInputsLocked(false);
+        readInputsToDuration();
+        resetBtn.disabled = true;
+        skipBtn.disabled = true;
+        startPauseBtn.textContent = '▶ Start';
+        startPauseBtn.classList.remove('pause-mode');
+        statusText.textContent = 'Ready • Auto-Repeat';
+        statusText.className = 'timer-sub';
+        updateMediaSession();
+      }
+
+      function skipCycle() {
+        completedCycles += 1;
+        remainingMs = durationMs;
+        if (isRunning) {
+          targetEndTime = Date.now() + durationMs;
+          updateMediaSession();
+        }
+        playLoudSingleSound();
+        renderTimerDisplay();
+      }
+
+      // ---------- Wake Lock & Notifications ----------
+      async function acquireWakeLock() {
+        if (!('wakeLock' in navigator)) return;
+        try {
+          wakeLockSentinel = await navigator.wakeLock.request('screen');
+          wakeLockBtn.classList.add('active');
+          wakeLockSentinel.addEventListener('release', () => {
+            if (!isRunning) wakeLockBtn.classList.remove('active');
+          });
+        } catch (_) {}
+      }
+
+      function releaseWakeLock() {
+        if (wakeLockSentinel) {
+          wakeLockSentinel.release().catch(() => {});
+          wakeLockSentinel = null;
+        }
+        if (!wakeLockWanted) wakeLockBtn.classList.remove('active');
+      }
+
+      function sendCycleNotification(count) {
+        if (!notificationsEnabled || !('Notification' in window) || Notification.permission !== 'granted') return;
+        if (document.visibilityState === 'visible') return;
+        try {
+          new Notification(`PulseLoop: Cycle #${count} Complete`, {
+            body: `Starting Cycle #${count + 1} (${formatTime(durationMs)})`,
+            tag: 'pulseloop-cycle',
+            renotify: true
+          });
+        } catch (_) {}
+      }
+
+      // ---------- Event Listeners ----------
+      startPauseBtn.addEventListener('click', () => {
+        if (isRunning) pauseTimer();
+        else startTimer();
+      });
+
+      resetBtn.addEventListener('click', resetTimer);
+      skipBtn.addEventListener('click', skipCycle);
+
+      resetCyclesBtn.addEventListener('click', () => {
+        completedCycles = 0;
+        renderTimerDisplay();
+        updateMediaSession();
+      });
+
+      [hoursInput, minsInput, secsInput].forEach((inp) => {
+        inp.addEventListener('change', () => {
+          if (!isRunning && !isPaused) readInputsToDuration();
+        });
+      });
+
+      presetBtns.forEach((btn) => {
+        btn.addEventListener('click', () => {
+          if (isRunning || isPaused) return;
+          const totalSec = parseInt(btn.dataset.sec, 10);
+          hoursInput.value = Math.floor(totalSec / 3600);
+          minsInput.value = Math.floor((totalSec % 3600) / 60);
+          secsInput.value = totalSec % 60;
+          readInputsToDuration();
+        });
+      });
+
+      soundProfileSelect.addEventListener('change', refreshAlarmSource);
+      volumeSlider.addEventListener('input', () => {
+        alarmAudio.volume = parseFloat(volumeSlider.value);
+      });
+
+      testSoundBtn.addEventListener('click', () => {
+        refreshAlarmSource();
+        playLoudSingleSound();
+      });
+
+      bgKeepAliveBtn.addEventListener('click', () => {
+        bgKeepAliveEnabled = !bgKeepAliveEnabled;
+        bgKeepAliveBtn.classList.toggle('active', bgKeepAliveEnabled);
+        if (isRunning) {
+          if (bgKeepAliveEnabled) startKeepAlive();
+          else stopKeepAlive();
+        }
+      });
+
+      wakeLockBtn.addEventListener('click', async () => {
+        if (!('wakeLock' in navigator)) {
+          alert('Screen Wake Lock is not supported in this browser.');
+          return;
+        }
+        wakeLockWanted = !wakeLockWanted;
+        wakeLockBtn.classList.toggle('active', wakeLockWanted);
+        if (wakeLockWanted && isRunning) await acquireWakeLock();
+        else if (!wakeLockWanted) releaseWakeLock();
+      });
+
+      notifyBtn.addEventListener('click', async () => {
+        if (!('Notification' in window)) {
+          alert('Browser notifications are not supported on this device.');
+          return;
+        }
+        if (Notification.permission === 'default') {
+          const res = await Notification.requestPermission();
+          notificationsEnabled = res === 'granted';
+        } else {
+          notificationsEnabled = !notificationsEnabled && Notification.permission === 'granted';
+        }
+        notifyBtn.classList.toggle('active', notificationsEnabled);
+      });
+
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+          if (isRunning) {
+            checkTimerProgress();
+            if (wakeLockWanted) acquireWakeLock();
+          }
+        } else if (isRunning) {
+          updateMediaSession();
+        }
+      });
+
+      readInputsToDuration();
+    })();
+  </script>
+</body>
+</html>
