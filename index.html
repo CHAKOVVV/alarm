@@ -2,25 +2,32 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <meta name="theme-color" content="#090d16" />
-  <title>PulseLoop — Smart Repeat Timer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>EDGE//21 — Smart Blackjack Calculator</title>
   <style>
     :root {
-      --bg-primary: #090d16;
-      --bg-card: rgba(17, 24, 39, 0.74);
-      --bg-glass: rgba(255, 255, 255, 0.045);
-      --border: rgba(255, 255, 255, 0.09);
-      --text-main: #f8fafc;
-      --text-muted: #94a3b8;
-      --accent: #38bdf8;
-      --accent-2: #818cf8;
-      --success: #34d399;
-      --danger: #fb7185;
-      --warning: #fbbf24;
-      --ring-track: rgba(255, 255, 255, 0.07);
-      --radius-lg: 28px;
-      --radius-md: 16px;
+      --bg-base: #070b0e;
+      --bg-surface: #0e151b;
+      --bg-elevated: #141e26;
+      --bg-slot: rgba(255, 255, 255, 0.03);
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-strong: rgba(255, 255, 255, 0.16);
+
+      --text-primary: #f1f5f9;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+
+      --emerald: #10b981;
+      --emerald-glow: rgba(16, 185, 129, 0.22);
+      --amber: #f59e0b;
+      --cyan: #06b6d4;
+      --rose: #f43f5e;
+      --violet: #a855f7;
+
+      --radius-lg: 14px;
+      --radius-md: 10px;
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
     }
 
     * {
@@ -32,1069 +39,1994 @@
 
     html, body {
       height: 100%;
-      width: 100%;
       overflow: hidden;
-      background-color: var(--bg-primary);
-      color: var(--text-main);
-      font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
-    }
-
-    body {
-      display: flex;
-      justify-content: center;
-      align-items: center;
+      font-family: var(--font-sans);
+      background-color: var(--bg-base);
       background-image:
-        radial-gradient(circle at 15% 15%, rgba(56, 189, 248, 0.14), transparent 45%),
-        radial-gradient(circle at 85% 85%, rgba(129, 140, 248, 0.14), transparent 45%);
-      padding: max(12px, env(safe-area-inset-top)) 16px max(12px, env(safe-area-inset-bottom));
-      transition: background-color 0.25s ease;
+        radial-gradient(ellipse 80% 50% at 50% -15%, rgba(16, 185, 129, 0.13), transparent),
+        radial-gradient(ellipse 60% 40% at 90% 100%, rgba(6, 182, 212, 0.08), transparent);
+      color: var(--text-primary);
+      -webkit-font-smoothing: antialiased;
     }
 
-    body.alarm-flash {
-      animation: bgFlash 0.45s ease-out 1;
-    }
-
-    @keyframes bgFlash {
-      0%, 100% { background-color: var(--bg-primary); }
-      40% { background-color: #1e293b; }
+    button {
+      font-family: inherit;
+      touch-action: manipulation;
     }
 
     .app-shell {
-      width: 100%;
-      max-width: 470px;
-      height: 100%;
-      max-height: 860px;
+      height: 100dvh;
+      max-width: 1380px;
+      margin: 0 auto;
+      padding: 12px 16px;
       display: flex;
       flex-direction: column;
-      justify-content: space-between;
-      gap: clamp(10px, 1.8dvh, 20px);
-      background: var(--bg-card);
-      backdrop-filter: blur(24px);
-      -webkit-backdrop-filter: blur(24px);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
-      padding: clamp(18px, 2.8dvh, 28px) clamp(18px, 4.5vw, 28px);
-      box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55);
-      overflow-y: auto;
-      scrollbar-width: none;
+      gap: 10px;
     }
-    .app-shell::-webkit-scrollbar { display: none; }
 
-    /* Header */
-    .header {
+    /* Compact Top Bar */
+    .topbar {
+      flex: 0 0 auto;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 12px;
+      gap: 10px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 8px 14px;
     }
 
     .brand {
       display: flex;
       align-items: center;
-      gap: 9px;
-      font-weight: 700;
-      font-size: 1.08rem;
-      letter-spacing: -0.02em;
-    }
-
-    .brand-dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, var(--accent), var(--accent-2));
-      box-shadow: 0 0 12px var(--accent);
-    }
-
-    .status-pills {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .pill-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      background: var(--bg-glass);
-      border: 1px solid var(--border);
-      color: var(--text-muted);
-      font-size: 0.72rem;
-      font-weight: 600;
-      padding: 6px 11px;
-      border-radius: 999px;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-
-    .pill-btn.active {
-      color: var(--success);
-      border-color: rgba(52, 211, 153, 0.35);
-      background: rgba(52, 211, 153, 0.1);
-    }
-
-    /* Cycle Counter Banner */
-    .cycle-bar {
-      display: grid;
-      grid-template-columns: 1fr auto 1fr;
-      align-items: center;
-      background: var(--bg-glass);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-md);
-      padding: 10px 16px;
-    }
-
-    .cycle-stat {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-
-    .cycle-stat.right {
-      align-items: flex-end;
-    }
-
-    .cycle-label {
-      font-size: 0.66rem;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: var(--text-muted);
-    }
-
-    .cycle-value {
-      font-size: 1.12rem;
-      font-weight: 700;
-      font-variant-numeric: tabular-nums;
-      color: var(--text-main);
-    }
-
-    .cycle-value.highlight {
-      color: var(--accent);
-    }
-
-    .cycle-reset-btn {
-      background: rgba(255, 255, 255, 0.06);
-      border: 1px solid var(--border);
-      color: var(--text-muted);
-      font-size: 0.73rem;
-      font-weight: 600;
-      padding: 6px 12px;
-      border-radius: 10px;
-      cursor: pointer;
-      transition: 0.2s;
-    }
-    .cycle-reset-btn:hover { color: var(--text-main); background: rgba(255, 255, 255, 0.12); }
-
-    /* Circular Timer Ring */
-    .ring-section {
-      position: relative;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin: 2px auto;
-      width: clamp(168px, 26dvh, 232px);
-      height: clamp(168px, 26dvh, 232px);
-      flex-shrink: 0;
-    }
-
-    .ring-svg {
-      width: 100%;
-      height: 100%;
-      transform: rotate(-90deg);
-    }
-
-    .ring-bg {
-      fill: none;
-      stroke: var(--ring-track);
-      stroke-width: 8;
-    }
-
-    .ring-progress {
-      fill: none;
-      stroke: url(#ringGradient);
-      stroke-width: 8;
-      stroke-linecap: round;
-      transition: stroke-dashoffset 0.1s linear;
-    }
-
-    .ring-center {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      padding: 12px;
-    }
-
-    .time-display {
-      font-size: clamp(2rem, 5dvh, 2.75rem);
-      font-weight: 800;
-      letter-spacing: -0.03em;
-      font-variant-numeric: tabular-nums;
-      line-height: 1.05;
-    }
-
-    .timer-sub {
-      margin-top: 7px;
-      font-size: 0.72rem;
-      font-weight: 600;
-      color: var(--text-muted);
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-    }
-
-    .timer-sub.running { color: var(--accent); }
-    .timer-sub.ringing { color: var(--warning); }
-
-    /* Duration Config */
-    .config-panel {
-      display: flex;
-      flex-direction: column;
-      gap: clamp(10px, 1.5dvh, 14px);
-    }
-
-    .time-inputs {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
       gap: 10px;
-    }
-
-    .input-box {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      background: var(--bg-glass);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 8px 10px;
-      transition: border-color 0.2s;
-    }
-
-    .input-box:focus-within {
-      border-color: var(--accent);
-    }
-
-    .input-box label {
-      font-size: 0.65rem;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: var(--text-muted);
-      margin-bottom: 3px;
-    }
-
-    .input-box input {
-      width: 100%;
-      background: transparent;
-      border: none;
-      outline: none;
-      color: var(--text-main);
-      font-size: 1.18rem;
-      font-weight: 700;
-      text-align: center;
-      font-variant-numeric: tabular-nums;
-    }
-
-    .input-box input:disabled {
-      opacity: 0.45;
-      cursor: not-allowed;
-    }
-
-    /* Presets */
-    .presets {
-      display: grid;
-      grid-template-columns: repeat(5, 1fr);
-      gap: 8px;
-    }
-
-    .preset-btn {
-      background: var(--bg-glass);
-      border: 1px solid var(--border);
-      color: var(--text-muted);
-      font-size: 0.76rem;
-      font-weight: 600;
-      padding: 8px 4px;
-      border-radius: 11px;
-      cursor: pointer;
-      transition: all 0.18s ease;
-    }
-
-    .preset-btn:hover:not(:disabled) {
-      color: var(--text-main);
-      border-color: rgba(56, 189, 248, 0.45);
-      background: rgba(56, 189, 248, 0.1);
-    }
-
-    .preset-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-
-    /* Audio Row */
-    .audio-bar {
-      display: grid;
-      grid-template-columns: 1fr auto auto;
-      align-items: center;
-      gap: 10px;
-      background: var(--bg-glass);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 10px 14px;
-    }
-
-    .sound-select-wrap {
-      display: flex;
-      align-items: center;
-      gap: 8px;
       min-width: 0;
     }
 
-    .sound-select {
-      width: 100%;
-      background: transparent;
-      border: none;
-      color: var(--text-main);
-      font-size: 0.82rem;
-      font-weight: 600;
-      outline: none;
-      cursor: pointer;
-    }
-    .sound-select option {
-      background: #0f172a;
-      color: var(--text-main);
-    }
-
-    .vol-wrap {
-      display: flex;
-      align-items: center;
+    .brand-mark {
+      flex: 0 0 auto;
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, var(--emerald), #059669);
+      display: grid;
+      place-items: center;
+      font-weight: 800;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: #03150e;
+      box-shadow: 0 0 16px var(--emerald-glow);
     }
 
-    .vol-slider {
-      width: 64px;
-      accent-color: var(--accent);
-      cursor: pointer;
-    }
-
-    .test-btn {
-      background: rgba(56, 189, 248, 0.14);
-      border: 1px solid rgba(56, 189, 248, 0.35);
-      color: var(--accent);
-      font-size: 0.75rem;
+    .brand h1 {
+      font-size: 15px;
       font-weight: 700;
-      padding: 6px 12px;
-      border-radius: 9px;
-      cursor: pointer;
+      letter-spacing: -0.02em;
       white-space: nowrap;
     }
-    .test-btn:active { transform: scale(0.96); }
 
-    /* Main Controls */
-    .controls {
+    .brand p {
+      font-size: 11px;
+      color: var(--text-secondary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .inline-stats {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      background: var(--bg-base);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 5px 12px;
+    }
+
+    .mini-stat {
+      display: flex;
+      align-items: baseline;
+      gap: 5px;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .mini-stat span.lbl {
+      color: var(--text-muted);
+      font-weight: 600;
+      font-size: 10px;
+      text-transform: uppercase;
+    }
+
+    .mini-stat span.val {
+      font-family: var(--font-mono);
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .mini-stat span.val.pos { color: var(--emerald); }
+    .mini-stat span.val.neg { color: var(--rose); }
+
+    .settings-bar {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .pill-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+      padding: 5px 9px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.15s ease;
+      white-space: nowrap;
+    }
+
+    .pill-toggle:hover {
+      border-color: var(--border-strong);
+      color: var(--text-primary);
+    }
+
+    .pill-toggle .badge-val {
+      color: var(--emerald);
+      font-family: var(--font-mono);
+    }
+
+    /* Main Workspace */
+    .workspace {
+      flex: 1 1 auto;
+      min-height: 0;
       display: grid;
-      grid-template-columns: 1fr 1.6fr 1fr;
+      grid-template-columns: 1.15fr 0.95fr;
       gap: 12px;
     }
 
-    .ctrl-btn {
-      border: none;
-      border-radius: 16px;
-      padding: clamp(12px, 1.8dvh, 15px) 10px;
-      font-size: 0.92rem;
-      font-weight: 700;
-      cursor: pointer;
+    .panel {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 14px 16px;
+      min-height: 0;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255,255,255,0.12) transparent;
+    }
+
+    /* Left Panel: Hand & Actions */
+    .table-felt {
+      background:
+        radial-gradient(circle at 50% 25%, rgba(16, 185, 129, 0.11), transparent 70%),
+        linear-gradient(180deg, #0c1716 0%, #091114 100%);
+      border: 1px solid rgba(16, 185, 129, 0.18);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .zone-header {
       display: flex;
       align-items: center;
-      justify-content: center;
-      gap: 6px;
-      transition: transform 0.14s ease, opacity 0.2s ease, background 0.2s ease;
-    }
-    .ctrl-btn:active:not(:disabled) { transform: scale(0.97); }
-    .ctrl-btn:disabled { opacity: 0.38; cursor: not-allowed; }
-
-    .btn-primary {
-      background: linear-gradient(135deg, var(--accent), var(--accent-2));
-      color: #060b14;
-      box-shadow: 0 8px 24px rgba(56, 189, 248, 0.26);
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 6px;
     }
 
-    .btn-primary.pause-mode {
-      background: linear-gradient(135deg, var(--warning), #f97316);
-      box-shadow: 0 8px 24px rgba(251, 191, 36, 0.24);
+    .zone-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-secondary);
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
     }
 
-    .btn-secondary {
-      background: var(--bg-glass);
-      border: 1px solid var(--border);
-      color: var(--text-main);
+    .score-pill {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      padding: 3px 9px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-primary);
+      white-space: nowrap;
     }
 
-    .btn-danger {
-      background: rgba(251, 113, 133, 0.12);
-      border: 1px solid rgba(251, 113, 133, 0.3);
-      color: var(--danger);
+    .score-pill.soft { color: var(--cyan); border-color: rgba(6, 182, 212, 0.35); background: rgba(6, 182, 212, 0.1); }
+    .score-pill.bust { color: var(--rose); border-color: rgba(244, 63, 94, 0.4); background: rgba(244, 63, 94, 0.14); }
+    .score-pill.bj { color: var(--amber); border-color: rgba(245, 158, 11, 0.45); background: rgba(245, 158, 11, 0.14); }
+
+    .cards-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      min-height: 88px;
+      align-items: center;
     }
 
-    .footer-note {
-      text-align: center;
-      font-size: 0.7rem;
+    /* Split Hands Container */
+    .split-hands-wrap {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .split-hand-box {
+      background: rgba(255, 255, 255, 0.025);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 8px 10px;
+      transition: 0.15s ease;
+    }
+
+    .split-hand-box.active {
+      border-color: var(--emerald);
+      background: rgba(16, 185, 129, 0.07);
+      box-shadow: 0 0 14px rgba(16, 185, 129, 0.15);
+    }
+
+    .playing-card {
+      width: 62px;
+      height: 86px;
+      border-radius: 8px;
+      background: linear-gradient(160deg, #ffffff 0%, #e2e8f0 100%);
+      color: #0f172a;
+      padding: 5px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.45);
+      position: relative;
+      user-select: none;
+      animation: dealIn 0.16s ease-out;
+    }
+
+    .split-hand-box .playing-card {
+      width: 52px;
+      height: 74px;
+      padding: 4px;
+    }
+
+    .split-hand-box .card-corner { font-size: 12px; }
+    .split-hand-box .card-suit-center { font-size: 20px; }
+
+    @keyframes dealIn {
+      from { opacity: 0; transform: translateY(-8px) scale(0.95); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .playing-card.red { color: #dc2626; }
+
+    .card-corner {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: fit-content;
+      line-height: 1;
+      font-weight: 800;
+      font-size: 13px;
+    }
+
+    .card-corner.bottom {
+      align-self: flex-end;
+      transform: rotate(180deg);
+    }
+
+    .card-suit-center {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      font-size: 22px;
+      opacity: 0.9;
+      pointer-events: none;
+    }
+
+    .empty-slot {
+      width: 62px;
+      height: 86px;
+      border-radius: 8px;
+      border: 1.5px dashed rgba(255, 255, 255, 0.14);
+      background: var(--bg-slot);
+      display: grid;
+      place-items: center;
       color: var(--text-muted);
-      opacity: 0.8;
-      line-height: 1.35;
+      font-size: 10px;
+      font-weight: 600;
+      text-align: center;
+      padding: 4px;
     }
 
-    @media (min-width: 640px) {
+    /* Middle Picker / Outcome Box */
+    .picker-box {
+      background: rgba(7, 11, 14, 0.72);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .picker-prompt {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-primary);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .rank-grid {
+      display: grid;
+      grid-template-columns: repeat(10, minmax(0, 1fr));
+      gap: 6px;
+    }
+
+    .rank-btn {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-primary);
+      border-radius: 7px;
+      padding: 9px 2px;
+      min-height: 40px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.12s ease;
+    }
+
+    .rank-btn:hover {
+      background: rgba(16, 185, 129, 0.18);
+      border-color: var(--emerald);
+      transform: translateY(-1px);
+    }
+
+    .rank-btn:active {
+      transform: scale(0.96);
+    }
+
+    .resolve-btns {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .outcome-banner {
+      border-radius: var(--radius-md);
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      animation: dealIn 0.18s ease;
+    }
+
+    .outcome-banner.win { background: rgba(16, 185, 129, 0.16); border: 1px solid rgba(16, 185, 129, 0.45); }
+    .outcome-banner.lose { background: rgba(244, 63, 94, 0.16); border: 1px solid rgba(244, 63, 94, 0.45); }
+    .outcome-banner.push { background: rgba(245, 158, 11, 0.16); border: 1px solid rgba(245, 158, 11, 0.45); }
+
+    .outcome-title { font-size: 15px; font-weight: 800; }
+    .outcome-desc { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+
+    /* Mobile inline advisor bar (visible on smaller screens) */
+    .mobile-advisor-bar {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 8px 11px;
+      border-radius: var(--radius-md);
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      font-size: 12px;
+    }
+
+    /* Action Controls */
+    .controls-area {
+      border-top: 1px solid var(--border-subtle);
+      padding-top: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .action-buttons {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(84px, 1fr));
+      gap: 8px;
+    }
+
+    .act-btn {
+      position: relative;
+      border: 1px solid var(--border-strong);
+      background: var(--bg-elevated);
+      color: var(--text-primary);
+      border-radius: var(--radius-md);
+      padding: 10px 6px;
+      min-height: 52px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      transition: all 0.15s ease;
+    }
+
+    .act-btn:hover:not(:disabled) {
+      transform: translateY(-1px);
+      border-color: rgba(255,255,255,0.35);
+    }
+
+    .act-btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+
+    .act-btn .act-name { font-size: 13px; font-weight: 800; }
+    .act-btn .act-sub { font-size: 10px; font-family: var(--font-mono); color: var(--text-secondary); }
+
+    .act-btn.recommended {
+      border-color: var(--emerald);
+      background: linear-gradient(180deg, rgba(16, 185, 129, 0.24), rgba(16, 185, 129, 0.08));
+      box-shadow: 0 0 18px var(--emerald-glow);
+    }
+
+    .act-btn.recommended::before {
+      content: "BEST";
+      position: absolute;
+      top: -8px;
+      right: 8px;
+      background: var(--emerald);
+      color: #03150e;
+      font-size: 9px;
+      font-weight: 800;
+      padding: 1px 6px;
+      border-radius: 999px;
+    }
+
+    .controls-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .primary-btn {
+      background: linear-gradient(135deg, var(--emerald), #059669);
+      color: #03150e;
+      border: none;
+      border-radius: var(--radius-md);
+      padding: 9px 16px;
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: 0.15s;
+      white-space: nowrap;
+    }
+
+    .primary-btn:hover { filter: brightness(1.08); }
+
+    .secondary-btn {
+      background: var(--bg-elevated);
+      color: var(--text-primary);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-md);
+      padding: 7px 11px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .secondary-btn:hover:not(:disabled) { background: rgba(255,255,255,0.08); }
+    .secondary-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    /* Right Panel: Smart Calculator */
+    .calc-panel {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .calc-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .calc-header h2 {
+      font-size: 14px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .live-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--emerald);
+      box-shadow: 0 0 8px var(--emerald);
+    }
+
+    .rec-hero {
+      border-radius: var(--radius-md);
+      padding: 11px 14px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-strong);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .rec-hero.hit { border-color: rgba(6, 182, 212, 0.45); background: linear-gradient(135deg, rgba(6,182,212,0.12), var(--bg-elevated)); }
+    .rec-hero.stand { border-color: rgba(16, 185, 129, 0.45); background: linear-gradient(135deg, rgba(16,185,129,0.12), var(--bg-elevated)); }
+    .rec-hero.double { border-color: rgba(245, 158, 11, 0.5); background: linear-gradient(135deg, rgba(245,158,11,0.14), var(--bg-elevated)); }
+    .rec-hero.split { border-color: rgba(168, 85, 247, 0.5); background: linear-gradient(135deg, rgba(168,85,247,0.14), var(--bg-elevated)); }
+    .rec-hero.surrender { border-color: rgba(244, 63, 94, 0.5); background: linear-gradient(135deg, rgba(244,63,94,0.14), var(--bg-elevated)); }
+
+    .rec-kicker {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-secondary);
+    }
+
+    .rec-action-big {
+      font-size: 21px;
+      font-weight: 900;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .rec-reason {
+      font-size: 12px;
+      color: var(--text-secondary);
+      line-height: 1.4;
+    }
+
+    .ev-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .ev-row {
+      background: var(--bg-base);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 8px 11px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .ev-row.best {
+      border-color: var(--emerald);
+      background: rgba(16, 185, 129, 0.06);
+    }
+
+    .ev-row.disabled-row { opacity: 0.42; }
+
+    .ev-row-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .ev-name {
+      font-size: 12.5px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .ev-tag {
+      font-size: 9px;
+      font-weight: 800;
+      padding: 1px 6px;
+      border-radius: 999px;
+      background: var(--emerald);
+      color: #03150e;
+    }
+
+    .ev-num {
+      font-family: var(--font-mono);
+      font-size: 12.5px;
+      font-weight: 700;
+    }
+
+    .ev-num.pos { color: var(--emerald); }
+    .ev-num.neg { color: var(--rose); }
+
+    .prob-bar {
+      height: 5px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.06);
+      overflow: hidden;
+      display: flex;
+    }
+
+    .prob-win { background: var(--emerald); }
+    .prob-push { background: var(--amber); }
+    .prob-loss { background: var(--rose); }
+
+    .prob-legend {
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      font-family: var(--font-mono);
+      color: var(--text-secondary);
+    }
+
+    .forecast-box {
+      background: var(--bg-base);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 9px 11px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .forecast-grid {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 5px;
+      text-align: center;
+    }
+
+    .fc-cell {
+      background: var(--bg-elevated);
+      border-radius: 6px;
+      padding: 5px 2px;
+      border: 1px solid var(--border-subtle);
+    }
+
+    .fc-cell.bust-cell {
+      border-color: rgba(16, 185, 129, 0.3);
+      background: rgba(16, 185, 129, 0.08);
+    }
+
+    .fc-label { font-size: 9px; color: var(--text-muted); font-weight: 700; }
+    .fc-val { font-family: var(--font-mono); font-size: 11px; font-weight: 700; margin-top: 1px; }
+
+    .history-strip {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      border-top: 1px solid var(--border-subtle);
+      padding-top: 8px;
+      min-height: 28px;
+    }
+    .history-strip::-webkit-scrollbar { display: none; }
+
+    .hist-pill {
+      flex: 0 0 auto;
+      font-size: 10px;
+      font-family: var(--font-mono);
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .hist-pill.win { border-color: rgba(16, 185, 129, 0.45); color: var(--emerald); }
+    .hist-pill.lose { border-color: rgba(244, 63, 94, 0.45); color: var(--rose); }
+    .hist-pill.push { border-color: rgba(245, 158, 11, 0.45); color: var(--amber); }
+
+    /* Tablet & Mobile Responsive */
+    @media (max-width: 960px) {
+      html, body {
+        overflow: auto;
+        height: auto;
+      }
+
       .app-shell {
         height: auto;
-        min-height: 670px;
-        gap: 20px;
+        min-height: 100dvh;
+        padding: 10px 10px 24px;
       }
-      .vol-slider { width: 82px; }
+
+      .topbar {
+        flex-wrap: wrap;
+        padding: 10px 12px;
+      }
+
+      .inline-stats {
+        width: 100%;
+        justify-content: space-between;
+        order: 3;
+      }
+
+      .settings-bar {
+        order: 2;
+      }
+
+      .workspace {
+        grid-template-columns: 1fr;
+      }
+
+      .panel {
+        overflow-y: visible;
+        padding: 12px;
+      }
+
+      .mobile-advisor-bar {
+        display: flex;
+      }
+    }
+
+    @media (max-width: 600px) {
+      .brand p { display: none; }
+
+      .topbar {
+        gap: 8px;
+      }
+
+      .settings-bar {
+        width: 100%;
+        justify-content: flex-start;
+      }
+
+      .pill-toggle {
+        padding: 5px 8px;
+        font-size: 10.5px;
+      }
+
+      .inline-stats {
+        gap: 8px;
+        padding: 6px 10px;
+      }
+
+      .mini-stat {
+        flex-direction: column;
+        align-items: center;
+        gap: 1px;
+        font-size: 11px;
+      }
+
+      .rank-grid {
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 7px;
+      }
+
+      .rank-btn {
+        min-height: 46px;
+        font-size: 15px;
+      }
+
+      .playing-card, .empty-slot {
+        width: 54px;
+        height: 76px;
+      }
+
+      .cards-row {
+        min-height: 78px;
+        gap: 6px;
+      }
+
+      .card-corner { font-size: 12px; }
+      .card-suit-center { font-size: 19px; }
+
+      .split-hands-wrap {
+        grid-template-columns: 1fr;
+      }
+
+      .forecast-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+
+      .outcome-banner {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .act-btn {
+        min-height: 54px;
+      }
     }
   </style>
 </head>
 <body>
-  <main class="app-shell">
-    <!-- Top Header -->
-    <header class="header">
+  <div class="app-shell">
+    <!-- Top Bar -->
+    <header class="topbar">
       <div class="brand">
-        <span class="brand-dot"></span>
-        <span>PulseLoop</span>
+        <div class="brand-mark">21</div>
+        <div>
+          <h1>EDGE//21 Calculator</h1>
+          <p>Exact DP Probability, Split &amp; EV Advisor</p>
+        </div>
       </div>
-      <div class="status-pills">
-        <button id="bgKeepAliveBtn" class="pill-btn active" title="Keeps mobile audio active across tabs">
-          ● BG Audio
-        </button>
-        <button id="wakeLockBtn" class="pill-btn" title="Keep screen awake while running">
-          ☀ Screen
-        </button>
-        <button id="notifyBtn" class="pill-btn" title="Enable cycle notifications">
-          🔔 Alert
-        </button>
+
+      <div class="inline-stats">
+        <div class="mini-stat"><span class="lbl">Record</span><span class="val" id="statRecord">0W-0L-0P</span></div>
+        <div class="mini-stat"><span class="lbl">Net</span><span class="val" id="statNet">0.0u</span></div>
+        <div class="mini-stat"><span class="lbl">Win%</span><span class="val pos" id="statWinRate">—</span></div>
+        <div class="mini-stat"><span class="lbl">Optimal</span><span class="val" id="statAccuracy">—</span></div>
+      </div>
+
+      <div class="settings-bar">
+        <button class="pill-toggle" onclick="toggleS17()" title="Dealer Stand/Hit Soft 17">17: <span class="badge-val" id="lblS17">S17</span></button>
+        <button class="pill-toggle" onclick="togglePeek()" title="US Dealer Hole-Card Peek">Peek: <span class="badge-val" id="lblPeek">On</span></button>
+        <button class="pill-toggle" onclick="toggleSurrender()" title="Late Surrender Allowed">LS: <span class="badge-val" id="lblSurr">Off</span></button>
+        <button class="pill-toggle" onclick="toggleDeckMode()" title="Shoe Model">Deck: <span class="badge-val" id="lblDeckMode">6-Deck</span></button>
+        <button class="pill-toggle" onclick="resetSession()">Reset</button>
       </div>
     </header>
 
-    <!-- Cycle Counter -->
-    <section class="cycle-bar">
-      <div class="cycle-stat">
-        <span class="cycle-label">Current Cycle</span>
-        <span class="cycle-value highlight" id="currentCycleEl">#1</span>
-      </div>
-      <button class="cycle-reset-btn" id="resetCyclesBtn" title="Reset completed cycles">Reset Count</button>
-      <div class="cycle-stat right">
-        <span class="cycle-label">Completed</span>
-        <span class="cycle-value" id="completedCyclesEl">0</span>
-      </div>
-    </section>
-
-    <!-- Circular Countdown -->
-    <section class="ring-section">
-      <svg class="ring-svg" viewBox="0 0 220 220">
-        <defs>
-          <linearGradient id="ringGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stop-color="#38bdf8" />
-            <stop offset="100%" stop-color="#818cf8" />
-          </linearGradient>
-        </defs>
-        <circle class="ring-bg" cx="110" cy="110" r="98"></circle>
-        <circle class="ring-progress" id="ringProgress" cx="110" cy="110" r="98"></circle>
-      </svg>
-      <div class="ring-center">
-        <div class="time-display" id="timeDisplay">01:00</div>
-        <div class="timer-sub" id="statusText">Ready • Auto-Repeat</div>
-      </div>
-    </section>
-
-    <!-- Configuration -->
-    <section class="config-panel">
-      <div class="time-inputs">
-        <div class="input-box">
-          <label for="hoursInput">Hours</label>
-          <input type="number" id="hoursInput" min="0" max="99" value="0" inputmode="numeric" />
+    <!-- Main Workspace -->
+    <main class="workspace">
+      <!-- Left: Hand Tracker & Actions -->
+      <section class="panel table-felt">
+        <!-- Dealer Zone -->
+        <div>
+          <div class="zone-header">
+            <span class="zone-title">Dealer Hand <span style="opacity:0.6; font-weight:500;">(1 visible card)</span></span>
+            <span class="score-pill" id="dealerScorePill">Waiting</span>
+          </div>
+          <div class="cards-row" id="dealerCardsRow"></div>
         </div>
-        <div class="input-box">
-          <label for="minsInput">Minutes</label>
-          <input type="number" id="minsInput" min="0" max="59" value="1" inputmode="numeric" />
+
+        <!-- Middle Card Picker / Outcome -->
+        <div id="middlePromptArea"></div>
+
+        <!-- Player Zone -->
+        <div>
+          <div class="zone-header">
+            <span class="zone-title">
+              Your Hand
+              <span id="turnBadge" class="score-pill" style="font-size:10px; padding:2px 7px;">Setup</span>
+            </span>
+            <span class="score-pill" id="playerScorePill">Waiting</span>
+          </div>
+          <div id="playerCardsContainer"></div>
         </div>
-        <div class="input-box">
-          <label for="secsInput">Seconds</label>
-          <input type="number" id="secsInput" min="0" max="59" value="0" inputmode="numeric" />
+
+        <!-- Mobile Quick Recommendation Strip -->
+        <div class="mobile-advisor-bar" id="mobileAdvisorBar"></div>
+
+        <!-- Action Controls -->
+        <div class="controls-area" id="controlsArea"></div>
+      </section>
+
+      <!-- Right: Smart Calculator -->
+      <aside class="panel calc-panel">
+        <div class="calc-header">
+          <h2><span class="live-dot"></span> Smart Decision Engine</h2>
+          <span style="font-size:10.5px; color:var(--text-muted); font-family:var(--font-mono);" id="shoeStatus">Exact DP Solver</span>
         </div>
-      </div>
 
-      <div class="presets">
-        <button class="preset-btn" data-sec="30">30s</button>
-        <button class="preset-btn" data-sec="60">1m</button>
-        <button class="preset-btn" data-sec="180">3m</button>
-        <button class="preset-btn" data-sec="300">5m</button>
-        <button class="preset-btn" data-sec="1500">25m</button>
-      </div>
-
-      <div class="audio-bar">
-        <div class="sound-select-wrap">
-          <span>🔊</span>
-          <select id="soundProfile" class="sound-select" aria-label="Notification sound">
-            <option value="crispPing">Loud Crisp Ping</option>
-            <option value="singleGong">Rich Single Gong</option>
-            <option value="sharpBeep">Sharp Single Beep</option>
-          </select>
+        <!-- Best Move Hero -->
+        <div class="rec-hero" id="recHero">
+          <div class="rec-kicker">Optimal Move</div>
+          <div class="rec-action-big" id="recActionTitle">Select Cards</div>
+          <div class="rec-reason" id="recReason">
+            Pick the dealer's 1 visible card and your 2 starting cards to calculate exact Hit, Stand, Double, and Split odds.
+          </div>
         </div>
-        <div class="vol-wrap">
-          <input type="range" id="volumeSlider" class="vol-slider" min="0.2" max="1" step="0.05" value="1" aria-label="Volume" />
+
+        <!-- EV Breakdown -->
+        <div class="ev-list" id="evList"></div>
+
+        <!-- Dealer Final Hand Forecast -->
+        <div class="forecast-box">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span class="zone-title" style="margin:0;">Dealer Outcome Forecast</span>
+            <span style="font-size:10px; color:var(--text-muted);" id="forecastSub">From visible card</span>
+          </div>
+          <div class="forecast-grid" id="forecastGrid"></div>
         </div>
-        <button id="testSoundBtn" class="test-btn">Test</button>
-      </div>
-    </section>
 
-    <!-- Action Buttons -->
-    <section class="controls">
-      <button id="resetBtn" class="ctrl-btn btn-danger" disabled>Reset</button>
-      <button id="startPauseBtn" class="ctrl-btn btn-primary">▶ Start</button>
-      <button id="skipBtn" class="ctrl-btn btn-secondary" disabled>Skip ↻</button>
-    </section>
-
-    <div class="footer-note">
-      Plays one loud tone per cycle — even across mobile tabs.
-    </div>
-  </main>
-
-  <audio id="keepAliveAudio" loop playsinline></audio>
-  <audio id="alarmAudio" playsinline></audio>
+        <!-- History Strip -->
+        <div class="history-strip" id="historyStrip">
+          <span style="font-size:11px; color:var(--text-muted);">Recent hands will appear here.</span>
+        </div>
+      </aside>
+    </main>
+  </div>
 
   <script>
-    (() => {
-      // ---------- DOM Elements ----------
-      const timeDisplay = document.getElementById('timeDisplay');
-      const statusText = document.getElementById('statusText');
-      const ringProgress = document.getElementById('ringProgress');
-      const currentCycleEl = document.getElementById('currentCycleEl');
-      const completedCyclesEl = document.getElementById('completedCyclesEl');
-      const resetCyclesBtn = document.getElementById('resetCyclesBtn');
+    const SUITS = ['♠', '♥', '♦', '♣'];
+    const RANKS = [
+      { label: '2', val: 2 },
+      { label: '3', val: 3 },
+      { label: '4', val: 4 },
+      { label: '5', val: 5 },
+      { label: '6', val: 6 },
+      { label: '7', val: 7 },
+      { label: '8', val: 8 },
+      { label: '9', val: 9 },
+      { label: '10', val: 10 },
+      { label: 'A', val: 11 }
+    ];
 
-      const hoursInput = document.getElementById('hoursInput');
-      const minsInput = document.getElementById('minsInput');
-      const secsInput = document.getElementById('secsInput');
-      const presetBtns = document.querySelectorAll('.preset-btn');
+    const state = {
+      dealerStandSoft17: true,
+      dealerPeek: true,
+      surrenderAllowed: false,
+      useShoe: true,
+      shoe: [],
+      runningCount: 0,
 
-      const startPauseBtn = document.getElementById('startPauseBtn');
-      const resetBtn = document.getElementById('resetBtn');
-      const skipBtn = document.getElementById('skipBtn');
+      phase: 'setup', // setup | player_turn | hit_pick | double_pick | split_pick | dealer_resolve | resolved
+      dealerCards: [],
+      hands: [{ cards: [], doubled: false, stood: false, busted: false, surrendered: false, fromSplit: false }],
+      activeHandIdx: 0,
+      outcome: null,
+      lastAnalysis: null,
 
-      const soundProfileSelect = document.getElementById('soundProfile');
-      const volumeSlider = document.getElementById('volumeSlider');
-      const testSoundBtn = document.getElementById('testSoundBtn');
+      wins: 0,
+      losses: 0,
+      pushes: 0,
+      netUnits: 0,
+      optimalDecisions: 0,
+      totalDecisions: 0,
+      history: [],
+      undoStack: []
+    };
 
-      const bgKeepAliveBtn = document.getElementById('bgKeepAliveBtn');
-      const wakeLockBtn = document.getElementById('wakeLockBtn');
-      const notifyBtn = document.getElementById('notifyBtn');
-
-      const keepAliveAudio = document.getElementById('keepAliveAudio');
-      const alarmAudio = document.getElementById('alarmAudio');
-
-      // ---------- Ring Geometry ----------
-      const RADIUS = 98;
-      const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
-      ringProgress.style.strokeDasharray = `${CIRCUMFERENCE} ${CIRCUMFERENCE}`;
-      ringProgress.style.strokeDashoffset = '0';
-
-      // ---------- State ----------
-      let durationMs = 60_000;
-      let remainingMs = 60_000;
-      let targetEndTime = null;
-      let isRunning = false;
-      let isPaused = false;
-      let completedCycles = 0;
-      let bgKeepAliveEnabled = true;
-      let wakeLockSentinel = null;
-      let wakeLockWanted = false;
-      let notificationsEnabled = false;
-      let audioCtx = null;
-      let rafId = null;
-
-      // ---------- Web Worker for Background-Resilient Ticking ----------
-      const workerCode = `
-        let timer = null;
-        self.onmessage = (e) => {
-          if (e.data === 'start') {
-            if (timer) clearInterval(timer);
-            timer = setInterval(() => self.postMessage('tick'), 200);
-          } else if (e.data === 'stop') {
-            if (timer) clearInterval(timer);
-            timer = null;
-          }
-        };
-      `;
-      const workerBlob = new Blob([workerCode], { type: 'application/javascript' });
-      const tickWorker = new Worker(URL.createObjectURL(workerBlob));
-
-      tickWorker.onmessage = () => {
-        if (isRunning) checkTimerProgress();
+    /*************************************************************************
+     * SNAPSHOTS / UNDO
+     *************************************************************************/
+    function pushUndoSnapshot() {
+      const snap = {
+        shoe: state.shoe.map(c => ({ ...c })),
+        runningCount: state.runningCount,
+        phase: state.phase,
+        dealerCards: state.dealerCards.map(c => ({ ...c })),
+        hands: state.hands.map(h => ({
+          ...h,
+          cards: h.cards.map(c => ({ ...c }))
+        })),
+        activeHandIdx: state.activeHandIdx,
+        outcome: state.outcome ? { ...state.outcome } : null,
+        wins: state.wins,
+        losses: state.losses,
+        pushes: state.pushes,
+        netUnits: state.netUnits,
+        optimalDecisions: state.optimalDecisions,
+        totalDecisions: state.totalDecisions,
+        history: state.history.map(x => ({ ...x }))
       };
+      state.undoStack.push(snap);
+      if (state.undoStack.length > 50) state.undoStack.shift();
+    }
 
-      // ---------- WAV Synthesis (Single Crisp Loud Tone) ----------
-      function encodeWav(samples, sampleRate = 44100) {
-        const buffer = new ArrayBuffer(44 + samples.length * 2);
-        const view = new DataView(buffer);
+    function undoLastAction() {
+      if (state.undoStack.length === 0) return;
+      const snap = state.undoStack.pop();
+      Object.assign(state, snap);
+      recalculateAndRender();
+    }
 
-        const writeString = (offset, str) => {
-          for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
-        };
-
-        writeString(0, 'RIFF');
-        view.setUint32(4, 36 + samples.length * 2, true);
-        writeString(8, 'WAVE');
-        writeString(12, 'fmt ');
-        view.setUint32(16, 16, true);
-        view.setUint16(20, 1, true);
-        view.setUint16(22, 1, true);
-        view.setUint32(24, sampleRate, true);
-        view.setUint32(28, sampleRate * 2, true);
-        view.setUint16(32, 2, true);
-        view.setUint16(34, 16, true);
-        writeString(36, 'data');
-        view.setUint32(40, samples.length * 2, true);
-
-        let offset = 44;
-        for (let i = 0; i < samples.length; i++, offset += 2) {
-          const s = Math.max(-1, Math.min(1, samples[i]));
-          view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
-        }
-        return new Blob([buffer], { type: 'audio/wav' });
-      }
-
-      function buildSilentKeepAliveUrl() {
-        const sr = 22050;
-        const len = sr * 2;
-        const samples = new Float32Array(len);
-        for (let i = 0; i < len; i++) {
-          samples[i] = Math.sin(2 * Math.PI * 20 * (i / sr)) * 0.00015;
-        }
-        return URL.createObjectURL(encodeWav(samples, sr));
-      }
-
-      // Single, decisive loud sound (no repeating beeps)
-      const alarmUrls = {};
-      function buildSingleSoundWav(profile) {
-        const sr = 44100;
-        const durationSec = profile === 'singleGong' ? 0.85 : 0.55;
-        const len = Math.floor(sr * durationSec);
-        const samples = new Float32Array(len);
-
-        for (let i = 0; i < len; i++) {
-          const t = i / sr;
-          let val = 0;
-
-          if (profile === 'crispPing') {
-            // One bright, loud, unmistakable bell ping
-            const env = Math.min(1, t / 0.006) * Math.exp(-t * 6.5);
-            val = (
-              0.65 * Math.sin(2 * Math.PI * 1046.5 * t) +
-              0.38 * Math.sin(2 * Math.PI * 1567.98 * t) +
-              0.25 * Math.sin(2 * Math.PI * 2093 * t)
-            ) * env;
-          } else if (profile === 'singleGong') {
-            // One rich, full-bodied low-mid strike
-            const env = Math.min(1, t / 0.008) * Math.exp(-t * 4.0);
-            val = (
-              0.7 * Math.sin(2 * Math.PI * 523.25 * t) +
-              0.4 * Math.sin(2 * Math.PI * 783.99 * t) +
-              0.25 * Math.sin(2 * Math.PI * 1046.5 * t)
-            ) * env;
-          } else if (profile === 'sharpBeep') {
-            // One solid, punchy 0.35s tone
-            const beepDur = 0.35;
-            if (t < beepDur) {
-              const env = Math.min(1, t / 0.01) * Math.min(1, (beepDur - t) / 0.03);
-              val = (
-                0.7 * Math.sin(2 * Math.PI * 987.77 * t) +
-                0.35 * Math.sin(2 * Math.PI * 1480.0 * t)
-              ) * env;
-            }
+    /*************************************************************************
+     * SHOE & HAND MATH
+     *************************************************************************/
+    function buildShoe(numDecks = 6) {
+      const deck = [];
+      const faces = ['2','3','4','5','6','7','8','9','10','J','Q','K','A'];
+      for (let d = 0; d < numDecks; d++) {
+        for (const suit of SUITS) {
+          for (const r of faces) {
+            const val = r === 'A' ? 11 : (['J','Q','K'].includes(r) ? 10 : parseInt(r, 10));
+            deck.push({ rank: r, suit, val });
           }
-
-          // Gentle saturation for maximum speaker volume without harsh clipping
-          samples[i] = Math.tanh(val * 1.85);
-        }
-
-        return URL.createObjectURL(encodeWav(samples, sr));
-      }
-
-      keepAliveAudio.src = buildSilentKeepAliveUrl();
-      keepAliveAudio.volume = 0.02;
-
-      function refreshAlarmSource() {
-        const prof = soundProfileSelect.value;
-        if (!alarmUrls[prof]) alarmUrls[prof] = buildSingleSoundWav(prof);
-        alarmAudio.src = alarmUrls[prof];
-        alarmAudio.volume = parseFloat(volumeSlider.value);
-      }
-      refreshAlarmSource();
-
-      function ensureAudioContext() {
-        if (!audioCtx) {
-          const AC = window.AudioContext || window.webkitAudioContext;
-          if (AC) audioCtx = new AC();
-        }
-        if (audioCtx && audioCtx.state === 'suspended') {
-          audioCtx.resume().catch(() => {});
         }
       }
+      state.shoe = deck;
+      state.runningCount = 0;
+    }
 
-      function playLoudSingleSound() {
-        const vol = parseFloat(volumeSlider.value);
-        const prof = soundProfileSelect.value;
+    function removeCardFromShoe(val) {
+      if (!state.useShoe) return;
+      if (state.shoe.length === 0) buildShoe(6);
+      const idx = state.shoe.findIndex(c => c.val === val);
+      if (idx !== -1) state.shoe.splice(idx, 1);
+      if (val >= 2 && val <= 6) state.runningCount++;
+      else if (val === 10 || val === 11) state.runningCount--;
+    }
 
-        // 1. Primary native <audio> playback (works reliably in mobile background tabs)
-        try {
-          alarmAudio.pause();
-          alarmAudio.currentTime = 0;
-          alarmAudio.volume = vol;
-          alarmAudio.play().catch(() => {});
-        } catch (_) {}
+    function makeVisualCard(val, label) {
+      const suit = SUITS[Math.floor(Math.random() * SUITS.length)];
+      return { rank: label, suit, val };
+    }
 
-        // 2. Single Web Audio API harmonic boost for extra punch when tab is active
-        try {
-          ensureAudioContext();
-          if (audioCtx) {
-            const now = audioCtx.currentTime;
-            const comp = audioCtx.createDynamicsCompressor();
-            const gain = audioCtx.createGain();
-            gain.gain.value = vol * 0.45;
-            comp.connect(gain);
-            gain.connect(audioCtx.destination);
+    function addCardToTotal(total, isSoft, cardVal) {
+      let aces = (isSoft ? 1 : 0) + (cardVal === 11 ? 1 : 0);
+      let nextTotal = total + cardVal;
+      while (nextTotal > 21 && aces > 0) {
+        nextTotal -= 10;
+        aces -= 1;
+      }
+      return { total: nextTotal, isSoft: aces > 0 };
+    }
 
-            const osc = audioCtx.createOscillator();
-            const env = audioCtx.createGain();
-            osc.type = 'triangle';
-            osc.frequency.setValueAtTime(
-              prof === 'singleGong' ? 523.25 : prof === 'sharpBeep' ? 987.77 : 1046.5,
-              now
-            );
-            env.gain.setValueAtTime(0.001, now);
-            env.gain.exponentialRampToValueAtTime(1.0, now + 0.01);
-            env.gain.exponentialRampToValueAtTime(0.001, now + 0.42);
-            osc.connect(env);
-            env.connect(comp);
-            osc.start(now);
-            osc.stop(now + 0.44);
+    function evaluateHand(cards, fromSplit = false) {
+      let total = 0;
+      let isSoft = false;
+      for (const c of cards) {
+        const res = addCardToTotal(total, isSoft, c.val);
+        total = res.total;
+        isSoft = res.isSoft;
+      }
+      return {
+        total,
+        isSoft,
+        isNaturalBJ: !fromSplit && cards.length === 2 && total === 21,
+        isBust: total > 21
+      };
+    }
+
+    function getCardProbabilities() {
+      if (!state.useShoe || state.shoe.length === 0) {
+        const p = {};
+        for (let v = 2; v <= 9; v++) p[v] = 1 / 13;
+        p[10] = 4 / 13;
+        p[11] = 1 / 13;
+        return p;
+      }
+      const counts = { 2:0,3:0,4:0,5:0,6:0,7:0,8:0,9:0,10:0,11:0 };
+      for (const c of state.shoe) counts[c.val]++;
+      const len = state.shoe.length;
+      const p = {};
+      for (let v = 2; v <= 11; v++) p[v] = counts[v] / len;
+      return p;
+    }
+
+    /*************************************************************************
+     * EXACT RECURSIVE EV SOLVER (WITH PEEK, SPLIT, & SURRENDER)
+     *************************************************************************/
+    function computeDealerDist(upcardVal, probs, standSoft17, conditionNoBJ = false) {
+      const memo = new Map();
+
+      function solve(total, isSoft, isFirstDraw) {
+        const key = `${total}_${isSoft ? 1 : 0}_${isFirstDraw ? 1 : 0}`;
+        if (memo.has(key)) return memo.get(key);
+
+        if (total > 21) {
+          const res = { 17:0, 18:0, 19:0, 20:0, 21:0, BJ:0, bust:1 };
+          memo.set(key, res);
+          return res;
+        }
+        if (total >= 17 && !(!standSoft17 && total === 17 && isSoft)) {
+          const res = { 17:0, 18:0, 19:0, 20:0, 21:0, BJ:0, bust:0 };
+          res[total] = 1;
+          memo.set(key, res);
+          return res;
+        }
+
+        let forbiddenHoleVal = null;
+        if (isFirstDraw && conditionNoBJ) {
+          if (upcardVal === 10) forbiddenHoleVal = 11;
+          else if (upcardVal === 11) forbiddenHoleVal = 10;
+        }
+
+        let denom = 1;
+        if (forbiddenHoleVal !== null) {
+          const rem = 1 - (probs[forbiddenHoleVal] || 0);
+          denom = rem > 1e-9 ? rem : 1;
+        }
+
+        const acc = { 17:0, 18:0, 19:0, 20:0, 21:0, BJ:0, bust:0 };
+        for (let v = 2; v <= 11; v++) {
+          if (v === forbiddenHoleVal && denom !== 1) continue;
+          const prob = (probs[v] || 0) / denom;
+          if (prob === 0) continue;
+
+          const next = addCardToTotal(total, isSoft, v);
+          if (isFirstDraw && next.total === 21) {
+            acc.BJ += prob;
+          } else {
+            const sub = solve(next.total, next.isSoft, false);
+            for (const k of Object.keys(acc)) acc[k] += prob * sub[k];
           }
-        } catch (_) {}
-
-        // 3. Single short vibration pulse (Android)
-        if ('vibrate' in navigator) {
-          navigator.vibrate(220);
         }
-
-        // 4. Subtle single visual flash
-        document.body.classList.remove('alarm-flash');
-        void document.body.offsetWidth;
-        document.body.classList.add('alarm-flash');
+        memo.set(key, acc);
+        return acc;
       }
 
-      function startKeepAlive() {
-        if (!bgKeepAliveEnabled) return;
-        ensureAudioContext();
-        keepAliveAudio.play().catch(() => {});
-        updateMediaSession();
+      return solve(upcardVal, upcardVal === 11, true);
+    }
+
+    function evaluateStand(playerTotal, isNaturalBJ, dealerDist) {
+      if (playerTotal > 21) return { win: 0, push: 0, loss: 1, ev: -1 };
+      if (isNaturalBJ) {
+        const push = dealerDist.BJ;
+        const win = 1 - push;
+        return { win, push, loss: 0, ev: win * 1.5 };
+      }
+      let win = dealerDist.bust, push = 0, loss = dealerDist.BJ;
+      for (let d = 17; d <= 21; d++) {
+        if (playerTotal > d) win += dealerDist[d];
+        else if (playerTotal === d) push += dealerDist[d];
+        else loss += dealerDist[d];
+      }
+      return { win, push, loss, ev: win - loss };
+    }
+
+    function analyzeSituation(handObj, dealerUpcardVal, isSplitSession) {
+      const probs = getCardProbabilities();
+      const hand = evaluateHand(handObj.cards, handObj.fromSplit);
+      const conditionNoBJ = state.dealerPeek && !hand.isNaturalBJ;
+      const dealerDist = computeDealerDist(dealerUpcardVal, probs, state.dealerStandSoft17, conditionNoBJ);
+
+      const canDouble = handObj.cards.length === 2 && !hand.isBust && !hand.isNaturalBJ;
+      const canSplit = !isSplitSession && handObj.cards.length === 2 && handObj.cards[0].val === handObj.cards[1].val && !hand.isNaturalBJ;
+      const canSurrender = state.surrenderAllowed && !isSplitSession && handObj.cards.length === 2 && !hand.isNaturalBJ;
+
+      const optMemo = new Map();
+      const hitMemo = new Map();
+
+      function bestAfterDraw(total, isSoft) {
+        const key = `${total}_${isSoft ? 1 : 0}`;
+        if (optMemo.has(key)) return optMemo.get(key);
+        const st = evaluateStand(total, false, dealerDist);
+        const ht = total === 21 ? { win: 0, push: 0, loss: 1, ev: -2 } : getHit(total, isSoft);
+        const best = st.ev >= ht.ev ? st : ht;
+        optMemo.set(key, best);
+        return best;
       }
 
-      function stopKeepAlive() {
-        keepAliveAudio.pause();
-      }
-
-      function updateMediaSession() {
-        if (!('mediaSession' in navigator)) return;
-        try {
-          navigator.mediaSession.metadata = new MediaMetadata({
-            title: `Cycle #${completedCycles + 1} • ${formatTime(remainingMs)}`,
-            artist: 'PulseLoop Repeat Timer',
-            album: isRunning ? 'Running (Auto-Repeat)' : 'Paused'
-          });
-          navigator.mediaSession.playbackState = isRunning ? 'playing' : 'paused';
-          navigator.mediaSession.setActionHandler('play', () => { if (!isRunning) startTimer(); });
-          navigator.mediaSession.setActionHandler('pause', () => { if (isRunning) pauseTimer(); });
-        } catch (_) {}
-      }
-
-      // ---------- Formatting & UI Sync ----------
-      function formatTime(ms) {
-        const totalSec = Math.max(0, Math.ceil(ms / 1000));
-        const h = Math.floor(totalSec / 3600);
-        const m = Math.floor((totalSec % 3600) / 60);
-        const s = totalSec % 60;
-        const pad = (n) => String(n).padStart(2, '0');
-        return h > 0 ? `${pad(h)}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
-      }
-
-      function readInputsToDuration() {
-        const h = Math.max(0, Math.min(99, parseInt(hoursInput.value || '0', 10) || 0));
-        const m = Math.max(0, Math.min(59, parseInt(minsInput.value || '0', 10) || 0));
-        const s = Math.max(0, Math.min(59, parseInt(secsInput.value || '0', 10) || 0));
-        hoursInput.value = h;
-        minsInput.value = m;
-        secsInput.value = s;
-
-        let total = (h * 3600 + m * 60 + s) * 1000;
-        if (total < 1000) {
-          total = 1000;
-          secsInput.value = 1;
+      function getHit(total, isSoft) {
+        const key = `${total}_${isSoft ? 1 : 0}`;
+        if (hitMemo.has(key)) return hitMemo.get(key);
+        let win = 0, push = 0, loss = 0, ev = 0;
+        for (let v = 2; v <= 11; v++) {
+          const p = probs[v];
+          if (p === 0) continue;
+          const next = addCardToTotal(total, isSoft, v);
+          if (next.total > 21) {
+            loss += p;
+            ev += p * (-1);
+          } else {
+            const sub = bestAfterDraw(next.total, next.isSoft);
+            win += p * sub.win;
+            push += p * sub.push;
+            loss += p * sub.loss;
+            ev += p * sub.ev;
+          }
         }
-        durationMs = total;
-        remainingMs = total;
-        renderTimerDisplay();
+        const res = { win, push, loss, ev };
+        hitMemo.set(key, res);
+        return res;
       }
 
-      function renderTimerDisplay() {
-        const formatted = formatTime(remainingMs);
-        timeDisplay.textContent = formatted;
-        document.title = isRunning ? `${formatted} (#${completedCycles + 1}) — PulseLoop` : 'PulseLoop — Smart Repeat Timer';
-
-        const progress = durationMs > 0 ? Math.max(0, Math.min(1, remainingMs / durationMs)) : 0;
-        ringProgress.style.strokeDashoffset = String(CIRCUMFERENCE * (1 - progress));
-
-        currentCycleEl.textContent = `#${completedCycles + 1}`;
-        completedCyclesEl.textContent = String(completedCycles);
+      function getDoubleForState(total, isSoft) {
+        let win = 0, push = 0, loss = 0, ev = 0;
+        for (let v = 2; v <= 11; v++) {
+          const p = probs[v];
+          if (p === 0) continue;
+          const next = addCardToTotal(total, isSoft, v);
+          if (next.total > 21) {
+            loss += p;
+            ev += p * (-2);
+          } else {
+            const st = evaluateStand(next.total, false, dealerDist);
+            win += p * st.win;
+            push += p * st.push;
+            loss += p * st.loss;
+            ev += p * (2 * st.ev);
+          }
+        }
+        return { win, push, loss, ev };
       }
 
-      function setInputsLocked(locked) {
-        hoursInput.disabled = locked;
-        minsInput.disabled = locked;
-        secsInput.disabled = locked;
-        presetBtns.forEach((b) => (b.disabled = locked));
+      const stand = evaluateStand(hand.total, hand.isNaturalBJ, dealerDist);
+      const hit = (hand.isBust || hand.total === 21) ? { win: 0, push: 0, loss: 1, ev: -1 } : getHit(hand.total, hand.isSoft);
+      const double = canDouble ? getDoubleForState(hand.total, hand.isSoft) : null;
+
+      let split = null;
+      if (canSplit) {
+        const cardVal = handObj.cards[0].val;
+        let avgWin = 0, avgPush = 0, avgLoss = 0, singleEv = 0;
+        for (let v = 2; v <= 11; v++) {
+          const p = probs[v];
+          if (p === 0) continue;
+          const next = addCardToTotal(cardVal, cardVal === 11, v);
+          let bestOne;
+          if (cardVal === 11) {
+            // Split Aces receive 1 card each
+            bestOne = evaluateStand(next.total, false, dealerDist);
+          } else {
+            const st = evaluateStand(next.total, false, dealerDist);
+            const ht = next.total === 21 ? { ev: -99 } : getHit(next.total, next.isSoft);
+            const db = getDoubleForState(next.total, next.isSoft);
+            bestOne = [st, ht, db].sort((a, b) => b.ev - a.ev)[0];
+          }
+          avgWin += p * bestOne.win;
+          avgPush += p * bestOne.push;
+          avgLoss += p * bestOne.loss;
+          singleEv += p * bestOne.ev;
+        }
+        split = { win: avgWin, push: avgPush, loss: avgLoss, ev: 2 * singleEv };
       }
 
-      // ---------- Core Timer Loop ----------
-      function checkTimerProgress() {
-        if (!isRunning || targetEndTime === null) return;
+      const surrender = canSurrender ? { win: 0, push: 0, loss: 1, ev: -0.5 } : null;
 
-        const now = Date.now();
-        if (now >= targetEndTime) {
-          const overdue = now - targetEndTime;
-          const cyclesPassed = 1 + Math.floor(overdue / durationMs);
-          completedCycles += cyclesPassed;
-          targetEndTime += cyclesPassed * durationMs;
-          remainingMs = Math.max(0, targetEndTime - now);
+      const options = [
+        { action: 'stand', label: 'STAND', ...stand }
+      ];
+      if (hand.total < 21) options.push({ action: 'hit', label: 'HIT', ...hit });
+      if (double) options.push({ action: 'double', label: 'DOUBLE', ...double });
+      if (split) options.push({ action: 'split', label: 'SPLIT', ...split });
+      if (surrender) options.push({ action: 'surrender', label: 'SURRENDER', ...surrender });
 
-          playLoudSingleSound();
-          sendCycleNotification(completedCycles);
-          updateMediaSession();
+      options.sort((a, b) => b.ev - a.ev);
 
-          statusText.textContent = `Cycle #${completedCycles} Complete`;
-          statusText.className = 'timer-sub ringing';
-          setTimeout(() => {
-            if (isRunning) {
-              statusText.textContent = 'Running • Auto-Repeat';
-              statusText.className = 'timer-sub running';
-            }
-          }, 1400);
+      return {
+        hand,
+        dealerDist,
+        canDouble,
+        canSplit,
+        canSurrender,
+        stand,
+        hit,
+        double,
+        split,
+        surrender,
+        best: options[0],
+        secondBest: options[1] || null
+      };
+    }
+
+    /*************************************************************************
+     * INTERACTION FLOW
+     *************************************************************************/
+    function toggleS17() {
+      state.dealerStandSoft17 = !state.dealerStandSoft17;
+      document.getElementById('lblS17').textContent = state.dealerStandSoft17 ? 'S17' : 'H17';
+      recalculateAndRender();
+    }
+
+    function togglePeek() {
+      state.dealerPeek = !state.dealerPeek;
+      document.getElementById('lblPeek').textContent = state.dealerPeek ? 'On' : 'Off';
+      recalculateAndRender();
+    }
+
+    function toggleSurrender() {
+      state.surrenderAllowed = !state.surrenderAllowed;
+      document.getElementById('lblSurr').textContent = state.surrenderAllowed ? 'On' : 'Off';
+      recalculateAndRender();
+    }
+
+    function toggleDeckMode() {
+      state.useShoe = !state.useShoe;
+      document.getElementById('lblDeckMode').textContent = state.useShoe ? '6-Deck' : 'Infinite';
+      if (state.useShoe && state.shoe.length === 0) buildShoe(6);
+      recalculateAndRender();
+    }
+
+    function resetSession() {
+      state.wins = 0;
+      state.losses = 0;
+      state.pushes = 0;
+      state.netUnits = 0;
+      state.optimalDecisions = 0;
+      state.totalDecisions = 0;
+      state.history = [];
+      state.undoStack = [];
+      buildShoe(6);
+      startNewHand(false);
+    }
+
+    function startNewHand(recordUndo = true) {
+      if (recordUndo && (state.dealerCards.length > 0 || state.hands[0].cards.length > 0)) {
+        pushUndoSnapshot();
+      }
+      if (state.useShoe && state.shoe.length < 24) buildShoe(6);
+      state.phase = 'setup';
+      state.dealerCards = [];
+      state.hands = [{ cards: [], doubled: false, stood: false, busted: false, surrendered: false, fromSplit: false }];
+      state.activeHandIdx = 0;
+      state.outcome = null;
+      state.lastAnalysis = null;
+      recalculateAndRender();
+    }
+
+    function advanceAfterHandFinishes() {
+      const nextIdx = state.hands.findIndex((h, i) => i > state.activeHandIdx && !h.stood && !h.busted && !h.surrendered);
+      if (nextIdx !== -1) {
+        state.activeHandIdx = nextIdx;
+        state.phase = state.hands[nextIdx].cards.length < 2 ? 'split_pick' : 'player_turn';
+      } else {
+        const allBusted = state.hands.every(h => h.busted || h.surrendered);
+        if (allBusted) {
+          resolveAllHandsWithoutDealer();
         } else {
-          remainingMs = targetEndTime - now;
+          state.phase = 'dealer_resolve';
         }
-
-        renderTimerDisplay();
       }
+    }
 
-      function animationLoop() {
-        if (!isRunning) return;
-        checkTimerProgress();
-        rafId = requestAnimationFrame(animationLoop);
-      }
+    function pickCard(val, label) {
+      pushUndoSnapshot();
+      const card = makeVisualCard(val, label);
+      removeCardFromShoe(val);
 
-      // ---------- Controls ----------
-      function startTimer() {
-        if (!isPaused) {
-          readInputsToDuration();
+      const activeHand = state.hands[state.activeHandIdx];
+
+      if (state.phase === 'setup') {
+        if (state.dealerCards.length === 0) {
+          state.dealerCards.push(card);
+        } else if (activeHand.cards.length < 2) {
+          activeHand.cards.push(card);
+          if (activeHand.cards.length === 2) {
+            const pHand = evaluateHand(activeHand.cards, false);
+            state.phase = pHand.isNaturalBJ ? 'dealer_resolve' : 'player_turn';
+          }
         }
-        isRunning = true;
-        isPaused = false;
-        targetEndTime = Date.now() + remainingMs;
-
-        alarmAudio.load();
-        startKeepAlive();
-        if (wakeLockWanted) acquireWakeLock();
-
-        setInputsLocked(true);
-        resetBtn.disabled = false;
-        skipBtn.disabled = false;
-        startPauseBtn.textContent = '⏸ Pause';
-        startPauseBtn.classList.add('pause-mode');
-        statusText.textContent = 'Running • Auto-Repeat';
-        statusText.className = 'timer-sub running';
-
-        tickWorker.postMessage('start');
-        cancelAnimationFrame(rafId);
-        rafId = requestAnimationFrame(animationLoop);
-        renderTimerDisplay();
-      }
-
-      function pauseTimer() {
-        checkTimerProgress();
-        isRunning = false;
-        isPaused = true;
-        targetEndTime = null;
-
-        tickWorker.postMessage('stop');
-        cancelAnimationFrame(rafId);
-        stopKeepAlive();
-        releaseWakeLock();
-        updateMediaSession();
-
-        startPauseBtn.textContent = '▶ Resume';
-        startPauseBtn.classList.remove('pause-mode');
-        statusText.textContent = 'Paused';
-        statusText.className = 'timer-sub';
-        renderTimerDisplay();
-      }
-
-      function resetTimer() {
-        isRunning = false;
-        isPaused = false;
-        targetEndTime = null;
-
-        tickWorker.postMessage('stop');
-        cancelAnimationFrame(rafId);
-        stopKeepAlive();
-        releaseWakeLock();
-
-        setInputsLocked(false);
-        readInputsToDuration();
-        resetBtn.disabled = true;
-        skipBtn.disabled = true;
-        startPauseBtn.textContent = '▶ Start';
-        startPauseBtn.classList.remove('pause-mode');
-        statusText.textContent = 'Ready • Auto-Repeat';
-        statusText.className = 'timer-sub';
-        updateMediaSession();
-      }
-
-      function skipCycle() {
-        completedCycles += 1;
-        remainingMs = durationMs;
-        if (isRunning) {
-          targetEndTime = Date.now() + durationMs;
-          updateMediaSession();
+      } else if (state.phase === 'hit_pick') {
+        activeHand.cards.push(card);
+        const pHand = evaluateHand(activeHand.cards, activeHand.fromSplit);
+        if (pHand.isBust) {
+          activeHand.busted = true;
+          advanceAfterHandFinishes();
+        } else if (pHand.total === 21) {
+          activeHand.stood = true;
+          advanceAfterHandFinishes();
+        } else {
+          state.phase = 'player_turn';
         }
-        playLoudSingleSound();
-        renderTimerDisplay();
-      }
-
-      // ---------- Wake Lock & Notifications ----------
-      async function acquireWakeLock() {
-        if (!('wakeLock' in navigator)) return;
-        try {
-          wakeLockSentinel = await navigator.wakeLock.request('screen');
-          wakeLockBtn.classList.add('active');
-          wakeLockSentinel.addEventListener('release', () => {
-            if (!isRunning) wakeLockBtn.classList.remove('active');
-          });
-        } catch (_) {}
-      }
-
-      function releaseWakeLock() {
-        if (wakeLockSentinel) {
-          wakeLockSentinel.release().catch(() => {});
-          wakeLockSentinel = null;
+      } else if (state.phase === 'double_pick') {
+        activeHand.cards.push(card);
+        const pHand = evaluateHand(activeHand.cards, activeHand.fromSplit);
+        if (pHand.isBust) activeHand.busted = true;
+        else activeHand.stood = true;
+        advanceAfterHandFinishes();
+      } else if (state.phase === 'split_pick') {
+        const wasAce = activeHand.cards[0].val === 11;
+        activeHand.cards.push(card);
+        const pHand = evaluateHand(activeHand.cards, true);
+        if (wasAce || pHand.total === 21) {
+          activeHand.stood = true;
+          advanceAfterHandFinishes();
+        } else {
+          state.phase = 'player_turn';
         }
-        if (!wakeLockWanted) wakeLockBtn.classList.remove('active');
-      }
-
-      function sendCycleNotification(count) {
-        if (!notificationsEnabled || !('Notification' in window) || Notification.permission !== 'granted') return;
-        if (document.visibilityState === 'visible') return;
-        try {
-          new Notification(`PulseLoop: Cycle #${count} Complete`, {
-            body: `Starting Cycle #${count + 1} (${formatTime(durationMs)})`,
-            tag: 'pulseloop-cycle',
-            renotify: true
-          });
-        } catch (_) {}
-      }
-
-      // ---------- Event Listeners ----------
-      startPauseBtn.addEventListener('click', () => {
-        if (isRunning) pauseTimer();
-        else startTimer();
-      });
-
-      resetBtn.addEventListener('click', resetTimer);
-      skipBtn.addEventListener('click', skipCycle);
-
-      resetCyclesBtn.addEventListener('click', () => {
-        completedCycles = 0;
-        renderTimerDisplay();
-        updateMediaSession();
-      });
-
-      [hoursInput, minsInput, secsInput].forEach((inp) => {
-        inp.addEventListener('change', () => {
-          if (!isRunning && !isPaused) readInputsToDuration();
-        });
-      });
-
-      presetBtns.forEach((btn) => {
-        btn.addEventListener('click', () => {
-          if (isRunning || isPaused) return;
-          const totalSec = parseInt(btn.dataset.sec, 10);
-          hoursInput.value = Math.floor(totalSec / 3600);
-          minsInput.value = Math.floor((totalSec % 3600) / 60);
-          secsInput.value = totalSec % 60;
-          readInputsToDuration();
-        });
-      });
-
-      soundProfileSelect.addEventListener('change', refreshAlarmSource);
-      volumeSlider.addEventListener('input', () => {
-        alarmAudio.volume = parseFloat(volumeSlider.value);
-      });
-
-      testSoundBtn.addEventListener('click', () => {
-        refreshAlarmSource();
-        playLoudSingleSound();
-      });
-
-      bgKeepAliveBtn.addEventListener('click', () => {
-        bgKeepAliveEnabled = !bgKeepAliveEnabled;
-        bgKeepAliveBtn.classList.toggle('active', bgKeepAliveEnabled);
-        if (isRunning) {
-          if (bgKeepAliveEnabled) startKeepAlive();
-          else stopKeepAlive();
-        }
-      });
-
-      wakeLockBtn.addEventListener('click', async () => {
-        if (!('wakeLock' in navigator)) {
-          alert('Screen Wake Lock is not supported in this browser.');
+      } else if (state.phase === 'dealer_resolve') {
+        state.dealerCards.push(card);
+        const dHand = evaluateHand(state.dealerCards, false);
+        const mustHit = dHand.total < 17 || (!state.dealerStandSoft17 && dHand.total === 17 && dHand.isSoft);
+        if (dHand.isBust || !mustHit) {
+          resolveComparison();
           return;
         }
-        wakeLockWanted = !wakeLockWanted;
-        wakeLockBtn.classList.toggle('active', wakeLockWanted);
-        if (wakeLockWanted && isRunning) await acquireWakeLock();
-        else if (!wakeLockWanted) releaseWakeLock();
-      });
+      }
 
-      notifyBtn.addEventListener('click', async () => {
-        if (!('Notification' in window)) {
-          alert('Browser notifications are not supported on this device.');
-          return;
+      recalculateAndRender();
+    }
+
+    function recordDecision(action) {
+      if (!state.lastAnalysis) return;
+      state.totalDecisions++;
+      if (state.lastAnalysis.best.action === action) state.optimalDecisions++;
+    }
+
+    function playerHit() {
+      if (state.phase !== 'player_turn') return;
+      pushUndoSnapshot();
+      recordDecision('hit');
+      state.phase = 'hit_pick';
+      renderAll();
+    }
+
+    function playerStand() {
+      if (state.phase !== 'player_turn') return;
+      pushUndoSnapshot();
+      recordDecision('stand');
+      state.hands[state.activeHandIdx].stood = true;
+      advanceAfterHandFinishes();
+      recalculateAndRender();
+    }
+
+    function playerDouble() {
+      const activeHand = state.hands[state.activeHandIdx];
+      if (state.phase !== 'player_turn' || activeHand.cards.length !== 2) return;
+      pushUndoSnapshot();
+      recordDecision('double');
+      activeHand.doubled = true;
+      state.phase = 'double_pick';
+      renderAll();
+    }
+
+    function playerSplit() {
+      const h = state.hands[0];
+      if (state.phase !== 'player_turn' || state.hands.length !== 1 || h.cards.length !== 2 || h.cards[0].val !== h.cards[1].val) return;
+      pushUndoSnapshot();
+      recordDecision('split');
+      const [c1, c2] = h.cards;
+      state.hands = [
+        { cards: [c1], doubled: false, stood: false, busted: false, surrendered: false, fromSplit: true },
+        { cards: [c2], doubled: false, stood: false, busted: false, surrendered: false, fromSplit: true }
+      ];
+      state.activeHandIdx = 0;
+      state.phase = 'split_pick';
+      recalculateAndRender();
+    }
+
+    function playerSurrender() {
+      const h = state.hands[0];
+      if (!state.surrenderAllowed || state.phase !== 'player_turn' || state.hands.length !== 1 || h.cards.length !== 2) return;
+      pushUndoSnapshot();
+      recordDecision('surrender');
+      h.surrendered = true;
+      resolveAllHandsWithoutDealer();
+    }
+
+    function dealerHadBlackjack() {
+      if (state.phase !== 'player_turn') return;
+      pushUndoSnapshot();
+      const dUp = state.dealerCards[0];
+      const holeVal = dUp.val === 11 ? 10 : 11;
+      const holeLabel = dUp.val === 11 ? '10' : 'A';
+      removeCardFromShoe(holeVal);
+      state.dealerCards.push(makeVisualCard(holeVal, holeLabel));
+      resolveComparison();
+    }
+
+    function resolveAllHandsWithoutDealer() {
+      let net = 0;
+      const parts = [];
+      state.hands.forEach((h, i) => {
+        const mult = h.doubled ? 2 : 1;
+        if (h.surrendered) {
+          state.losses++;
+          net -= 0.5;
+          parts.push(`Surrendered (-0.5u)`);
+        } else if (h.busted) {
+          state.losses++;
+          net -= mult;
+          const ev = evaluateHand(h.cards, h.fromSplit);
+          parts.push(`${state.hands.length > 1 ? `H${i+1} ` : ''}Bust (${ev.total})`);
         }
-        if (Notification.permission === 'default') {
-          const res = await Notification.requestPermission();
-          notificationsEnabled = res === 'granted';
+      });
+      state.netUnits += net;
+      const type = net > 0 ? 'win' : (net < 0 ? 'lose' : 'push');
+      const title = state.hands[0].surrendered
+        ? 'SURRENDERED — Half Bet Returned'
+        : (state.hands.length > 1 ? 'BOTH HANDS BUSTED — You Lose' : 'BUST — You Lose');
+      finalizeRound(type, title, parts.join(' • '), net);
+    }
+
+    function resolveComparison() {
+      const dHand = evaluateHand(state.dealerCards, false);
+      let net = 0;
+      const details = [];
+
+      state.hands.forEach((h, i) => {
+        const prefix = state.hands.length > 1 ? `H${i + 1}: ` : '';
+        const pHand = evaluateHand(h.cards, h.fromSplit);
+        const mult = h.doubled ? 2 : 1;
+
+        if (h.busted) {
+          state.losses++;
+          net -= mult;
+          details.push(`${prefix}Bust (${pHand.total})`);
+        } else if (pHand.isNaturalBJ && dHand.isNaturalBJ) {
+          state.pushes++;
+          details.push(`${prefix}Push (Both BJ)`);
+        } else if (pHand.isNaturalBJ) {
+          state.wins++;
+          net += 1.5;
+          details.push(`${prefix}Blackjack (+1.5u)`);
+        } else if (dHand.isNaturalBJ) {
+          state.losses++;
+          net -= mult;
+          details.push(`${prefix}Dealer BJ`);
+        } else if (dHand.isBust) {
+          state.wins++;
+          net += mult;
+          details.push(`${prefix}Win vs Bust (+${mult}u)`);
+        } else if (pHand.total > dHand.total) {
+          state.wins++;
+          net += mult;
+          details.push(`${prefix}${pHand.total} beats ${dHand.total}`);
+        } else if (pHand.total < dHand.total) {
+          state.losses++;
+          net -= mult;
+          details.push(`${prefix}${pHand.total} loses to ${dHand.total}`);
         } else {
-          notificationsEnabled = !notificationsEnabled && Notification.permission === 'granted';
+          state.pushes++;
+          details.push(`${prefix}Push (${pHand.total})`);
         }
-        notifyBtn.classList.toggle('active', notificationsEnabled);
       });
 
-      document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible') {
-          if (isRunning) {
-            checkTimerProgress();
-            if (wakeLockWanted) acquireWakeLock();
+      state.netUnits += net;
+      const type = net > 0 ? 'win' : (net < 0 ? 'lose' : 'push');
+      let title = '';
+      if (state.hands.length > 1) {
+        title = net > 0 ? `SPLIT WIN (+${net}u)` : (net < 0 ? `SPLIT LOSS (${net}u)` : 'SPLIT PUSH (0u)');
+      } else {
+        if (type === 'win') title = dHand.isBust ? 'Dealer Busts — You Win!' : (evaluateHand(state.hands[0].cards).isNaturalBJ ? 'BLACKJACK — You Win!' : 'You Win!');
+        else if (type === 'lose') title = dHand.isNaturalBJ ? 'Dealer Blackjack — You Lose' : 'Dealer Wins — You Lose';
+        else title = 'PUSH — Tie';
+      }
+
+      finalizeRound(type, title, details.join(' • '), net);
+    }
+
+    function quickResolve(type) {
+      pushUndoSnapshot();
+      let net = 0;
+      const activeNonBust = state.hands.filter(h => !h.busted && !h.surrendered);
+      const bustedCount = state.hands.length - activeNonBust.length;
+
+      state.hands.forEach(h => {
+        const mult = h.doubled ? 2 : 1;
+        const pHand = evaluateHand(h.cards, h.fromSplit);
+        if (h.busted) {
+          state.losses++;
+          net -= mult;
+        } else if (type === 'win') {
+          state.wins++;
+          net += pHand.isNaturalBJ ? 1.5 : mult;
+        } else if (type === 'lose') {
+          state.losses++;
+          net -= mult;
+        } else {
+          state.pushes++;
+        }
+      });
+
+      state.netUnits += net;
+      const finalType = net > 0 ? 'win' : (net < 0 ? 'lose' : 'push');
+      const title = type === 'win' ? 'Logged Win' : (type === 'lose' ? 'Logged Loss' : 'Logged Push');
+      const desc = bustedCount > 0 ? `Resolved ${activeNonBust.length} active hand(s) (${bustedCount} busted).` : `Round logged (${net >= 0 ? '+' : ''}${net}u).`;
+      finalizeRound(finalType, title, desc, net);
+    }
+
+    function finalizeRound(type, title, desc, net) {
+      state.phase = 'resolved';
+      state.outcome = { type, title, desc };
+
+      const dUp = state.dealerCards[0] ? state.dealerCards[0].rank : '?';
+      const handSummary = state.hands.map(h => {
+        const ev = evaluateHand(h.cards, h.fromSplit);
+        return (ev.isNaturalBJ ? 'BJ' : ev.total) + (h.doubled ? '×2' : '');
+      }).join('/');
+
+      state.history.unshift({
+        type,
+        label: `${net > 0 ? 'W' : net < 0 ? 'L' : 'P'} • ${handSummary} vs ${dUp} (${net >= 0 ? '+' : ''}${net}u)`
+      });
+      if (state.history.length > 10) state.history.pop();
+      state.lastAnalysis = null;
+      renderAll();
+    }
+
+    function recalculateAndRender() {
+      const activeHand = state.hands[state.activeHandIdx];
+      if (state.phase === 'player_turn' && state.dealerCards.length >= 1 && activeHand && activeHand.cards.length >= 2) {
+        const handEval = evaluateHand(activeHand.cards, activeHand.fromSplit);
+        state.lastAnalysis = !handEval.isBust
+          ? analyzeSituation(activeHand, state.dealerCards[0].val, state.hands.length > 1)
+          : null;
+      } else {
+        state.lastAnalysis = null;
+      }
+      renderAll();
+    }
+
+    /*************************************************************************
+     * RENDERING
+     *************************************************************************/
+    function renderCardHTML(card) {
+      const isRed = card.suit === '♥' || card.suit === '♦';
+      return `
+        <div class="playing-card ${isRed ? 'red' : ''}">
+          <div class="card-corner"><span>${card.rank}</span><span style="font-size:10px;">${card.suit}</span></div>
+          <div class="card-suit-center">${card.suit}</div>
+          <div class="card-corner bottom"><span>${card.rank}</span><span style="font-size:10px;">${card.suit}</span></div>
+        </div>
+      `;
+    }
+
+    function renderRankGrid(prompt, extraBtn = '') {
+      return `
+        <div class="picker-box">
+          <div class="picker-prompt">
+            <span>${prompt}</span>
+            <div style="display:flex; gap:6px; align-items:center;">
+              ${extraBtn}
+            </div>
+          </div>
+          <div class="rank-grid">
+            ${RANKS.map(r => `<button class="rank-btn" onclick="pickCard(${r.val}, '${r.label}')">${r.label}</button>`).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    function fmtEv(val) {
+      return `${val >= 0 ? '+' : ''}${val.toFixed(3)}`;
+    }
+
+    function renderAll() {
+      // Top Stats
+      document.getElementById('statRecord').textContent = `${state.wins}W-${state.losses}L-${state.pushes}P`;
+      const netEl = document.getElementById('statNet');
+      netEl.textContent = `${state.netUnits >= 0 ? '+' : ''}${state.netUnits.toFixed(1)}u`;
+      netEl.className = `val ${state.netUnits > 0 ? 'pos' : (state.netUnits < 0 ? 'neg' : '')}`;
+
+      const decided = state.wins + state.losses;
+      document.getElementById('statWinRate').textContent = decided > 0 ? `${((state.wins / decided) * 100).toFixed(1)}%` : '—';
+      document.getElementById('statAccuracy').textContent = state.totalDecisions > 0 ? `${((state.optimalDecisions / state.totalDecisions) * 100).toFixed(0)}%` : '—';
+
+      // Dealer Cards
+      const dealerRow = document.getElementById('dealerCardsRow');
+      const dPill = document.getElementById('dealerScorePill');
+      if (state.dealerCards.length === 0) {
+        dealerRow.innerHTML = `<div class="empty-slot">Dealer<br>Upcard</div>`;
+        dPill.textContent = 'Waiting';
+        dPill.className = 'score-pill';
+      } else {
+        dealerRow.innerHTML = state.dealerCards.map(renderCardHTML).join('');
+        const dEval = evaluateHand(state.dealerCards, false);
+        if (dEval.isBust) {
+          dPill.textContent = `BUST (${dEval.total})`;
+          dPill.className = 'score-pill bust';
+        } else if (dEval.isNaturalBJ) {
+          dPill.textContent = `BLACKJACK`;
+          dPill.className = 'score-pill bj';
+        } else {
+          dPill.textContent = `${dEval.isSoft ? 'Soft ' : ''}${dEval.total}`;
+          dPill.className = `score-pill ${dEval.isSoft ? 'soft' : ''}`;
+        }
+      }
+
+      // Player Cards (Single or Split)
+      const pContainer = document.getElementById('playerCardsContainer');
+      const pPill = document.getElementById('playerScorePill');
+      const activeHand = state.hands[state.activeHandIdx];
+
+      if (state.hands.length === 1) {
+        if (activeHand.cards.length === 0) {
+          pContainer.innerHTML = `<div class="cards-row"><div class="empty-slot">Card 1</div><div class="empty-slot">Card 2</div></div>`;
+          pPill.textContent = 'Waiting';
+          pPill.className = 'score-pill';
+        } else {
+          pContainer.innerHTML = `<div class="cards-row">${activeHand.cards.map(renderCardHTML).join('')}</div>`;
+          const pEval = evaluateHand(activeHand.cards, false);
+          if (pEval.isBust) {
+            pPill.textContent = `BUST (${pEval.total})`;
+            pPill.className = 'score-pill bust';
+          } else if (pEval.isNaturalBJ) {
+            pPill.textContent = `BLACKJACK (21)`;
+            pPill.className = 'score-pill bj';
+          } else {
+            pPill.textContent = `${pEval.isSoft ? 'Soft ' : 'Hard '}${pEval.total}`;
+            pPill.className = `score-pill ${pEval.isSoft ? 'soft' : ''}`;
           }
-        } else if (isRunning) {
-          updateMediaSession();
         }
-      });
+      } else {
+        pPill.textContent = `Split • Hand ${state.activeHandIdx + 1}/2`;
+        pPill.className = 'score-pill soft';
+        pContainer.innerHTML = `
+          <div class="split-hands-wrap">
+            ${state.hands.map((h, i) => {
+              const ev = evaluateHand(h.cards, true);
+              const isAct = i === state.activeHandIdx && state.phase !== 'dealer_resolve' && state.phase !== 'resolved';
+              const badge = h.busted ? `BUST (${ev.total})` : `${ev.isSoft ? 'Soft ' : ''}${ev.total}${h.doubled ? ' (2×)' : ''}`;
+              return `
+                <div class="split-hand-box ${isAct ? 'active' : ''}">
+                  <div class="zone-header" style="margin-bottom:4px;">
+                    <span class="zone-title" style="font-size:10px;">Hand ${i + 1}</span>
+                    <span class="score-pill ${h.busted ? 'bust' : (ev.isSoft ? 'soft' : '')}" style="font-size:10px; padding:2px 7px;">${badge}</span>
+                  </div>
+                  <div class="cards-row" style="min-height:74px;">
+                    ${h.cards.map(renderCardHTML).join('')}
+                    ${h.cards.length < 2 ? `<div class="empty-slot" style="width:52px; height:74px;">Draw</div>` : ''}
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        `;
+      }
 
-      readInputsToDuration();
-    })();
+      // Turn Badge
+      const turnBadge = document.getElementById('turnBadge');
+      if (state.phase === 'player_turn') {
+        const turnNum = activeHand.cards.length - 1;
+        turnBadge.textContent = state.hands.length > 1
+          ? `Hand ${state.activeHandIdx + 1} • Turn ${turnNum}`
+          : (turnNum === 1 ? 'Turn 1' : `Turn ${turnNum}`);
+      } else if (state.phase === 'resolved') {
+        turnBadge.textContent = 'Finished';
+      } else if (state.phase === 'dealer_resolve') {
+        turnBadge.textContent = 'Dealer Turn';
+      } else {
+        turnBadge.textContent = 'Setup';
+      }
+
+      // Middle Area
+      const mid = document.getElementById('middlePromptArea');
+      if (state.phase === 'setup') {
+        if (state.dealerCards.length === 0) {
+          mid.innerHTML = renderRankGrid('Step 1: Tap Dealer’s 1 visible card');
+        } else {
+          const num = activeHand.cards.length + 1;
+          mid.innerHTML = renderRankGrid(`Step ${num + 1}: Tap Your Card #${num}`);
+        }
+      } else if (state.phase === 'hit_pick') {
+        mid.innerHTML = renderRankGrid('Hit — Tap the card you drew:');
+      } else if (state.phase === 'double_pick') {
+        mid.innerHTML = renderRankGrid('Doubled — Tap your 1 final card:');
+      } else if (state.phase === 'split_pick') {
+        mid.innerHTML = renderRankGrid(`Split Hand ${state.activeHandIdx + 1} — Tap drawn card:`);
+      } else if (state.phase === 'dealer_resolve') {
+        mid.innerHTML = `
+          <div class="picker-box">
+            <div class="picker-prompt"><span>Dealer's Turn — Tap dealer's drawn cards OR log result:</span></div>
+            <div class="rank-grid">${RANKS.map(r => `<button class="rank-btn" onclick="pickCard(${r.val}, '${r.label}')">${r.label}</button>`).join('')}</div>
+            <div class="resolve-btns">
+              <button class="primary-btn" onclick="quickResolve('win')">Won</button>
+              <button class="secondary-btn" onclick="quickResolve('push')">Push</button>
+              <button class="secondary-btn" style="border-color:rgba(244,63,94,0.45); color:var(--rose);" onclick="quickResolve('lose')">Lost</button>
+            </div>
+          </div>
+        `;
+      } else if (state.phase === 'resolved' && state.outcome) {
+        mid.innerHTML = `
+          <div class="outcome-banner ${state.outcome.type}">
+            <div>
+              <div class="outcome-title">${state.outcome.title}</div>
+              <div class="outcome-desc">${state.outcome.desc}</div>
+            </div>
+            <button class="primary-btn" onclick="startNewHand(false)">Next Hand</button>
+          </div>
+        `;
+      } else {
+        mid.innerHTML = '';
+      }
+
+      // Mobile Inline Advisor Strip
+      const mobBar = document.getElementById('mobileAdvisorBar');
+      if (state.lastAnalysis) {
+        const best = state.lastAnalysis.best;
+        mobBar.innerHTML = `
+          <span>Best Move: <strong style="color:var(--emerald); font-size:13px;">${best.label}</strong></span>
+          <span style="font-family:var(--font-mono); font-weight:700; color:${best.ev >= 0 ? 'var(--emerald)' : 'var(--rose)'};">EV ${fmtEv(best.ev)} • Win ${(best.win*100).toFixed(0)}%</span>
+        `;
+        mobBar.style.display = '';
+      } else {
+        mobBar.style.display = 'none';
+      }
+
+      // Action Controls
+      const ctrl = document.getElementById('controlsArea');
+      const undoDisabled = state.undoStack.length === 0 ? 'disabled' : '';
+      const dUpVal = state.dealerCards[0] ? state.dealerCards[0].val : 0;
+      const canShowDealerBJ = state.phase === 'player_turn' && state.hands.length === 1 && activeHand.cards.length === 2 && (dUpVal === 10 || dUpVal === 11);
+
+      if (state.phase === 'player_turn' && state.lastAnalysis) {
+        const a = state.lastAnalysis;
+        const bestAct = a.best.action;
+        ctrl.innerHTML = `
+          <div class="action-buttons">
+            <button class="act-btn ${bestAct === 'hit' ? 'recommended' : ''}" onclick="playerHit()">
+              <span class="act-name">HIT</span>
+              <span class="act-sub">${fmtEv(a.hit.ev)} EV</span>
+            </button>
+            <button class="act-btn ${bestAct === 'stand' ? 'recommended' : ''}" onclick="playerStand()">
+              <span class="act-name">STAND</span>
+              <span class="act-sub">${fmtEv(a.stand.ev)} EV</span>
+            </button>
+            <button class="act-btn ${bestAct === 'double' ? 'recommended' : ''}" ${!a.canDouble ? 'disabled' : ''} onclick="playerDouble()">
+              <span class="act-name">DOUBLE</span>
+              <span class="act-sub">${a.double ? fmtEv(a.double.ev) + ' EV' : 'Turn 1 only'}</span>
+            </button>
+            ${a.canSplit ? `
+              <button class="act-btn ${bestAct === 'split' ? 'recommended' : ''}" onclick="playerSplit()">
+                <span class="act-name">SPLIT</span>
+                <span class="act-sub">${fmtEv(a.split.ev)} EV</span>
+              </button>
+            ` : ''}
+            ${a.canSurrender ? `
+              <button class="act-btn ${bestAct === 'surrender' ? 'recommended' : ''}" onclick="playerSurrender()">
+                <span class="act-name">SURR</span>
+                <span class="act-sub">-0.500 EV</span>
+              </button>
+            ` : ''}
+          </div>
+          <div class="controls-footer">
+            <div style="display:flex; gap:6px; align-items:center;">
+              <button class="secondary-btn" ${undoDisabled} onclick="undoLastAction()">↺ Undo</button>
+              ${canShowDealerBJ ? `<button class="secondary-btn" style="border-color:rgba(244,63,94,0.4); color:var(--rose);" onclick="dealerHadBlackjack()">Dealer BJ</button>` : ''}
+            </div>
+            <button class="secondary-btn" onclick="startNewHand()">New Hand</button>
+          </div>
+        `;
+      } else {
+        ctrl.innerHTML = `
+          <div class="controls-footer">
+            <button class="secondary-btn" ${undoDisabled} onclick="undoLastAction()">↺ Undo</button>
+            <span style="font-size:11px; color:var(--text-muted);">
+              ${state.phase === 'resolved' ? 'Tap Next Hand to continue.' : 'Select cards above to continue.'}
+            </span>
+            <button class="secondary-btn" onclick="startNewHand()">New Hand</button>
+          </div>
+        `;
+      }
+
+      // Right Panel: Shoe & Count
+      const shoeStatus = document.getElementById('shoeStatus');
+      if (state.useShoe) {
+        const decksRem = Math.max(0.5, state.shoe.length / 52);
+        const trueCount = state.runningCount / decksRem;
+        const rcStr = `${state.runningCount >= 0 ? '+' : ''}${state.runningCount}`;
+        const tcStr = `${trueCount >= 0 ? '+' : ''}${trueCount.toFixed(1)}`;
+        shoeStatus.textContent = `${state.shoe.length} cards • RC ${rcStr} • TC ${tcStr}`;
+      } else {
+        shoeStatus.textContent = 'Infinite Deck • Exact DP';
+      }
+
+      // Dealer Forecast
+      const forecastGrid = document.getElementById('forecastGrid');
+      if (state.dealerCards.length >= 1) {
+        const condPeek = state.dealerPeek && state.phase === 'player_turn';
+        const dist = computeDealerDist(state.dealerCards[0].val, getCardProbabilities(), state.dealerStandSoft17, condPeek);
+        document.getElementById('forecastSub').textContent = `Upcard ${state.dealerCards[0].rank} (${state.dealerStandSoft17 ? 'S17' : 'H17'}${condPeek ? ', No-BJ' : ''})`;
+        forecastGrid.innerHTML = ['17','18','19','20','21','BJ','bust'].map(k => `
+          <div class="fc-cell ${k === 'bust' ? 'bust-cell' : ''}">
+            <div class="fc-label">${k === 'bust' ? 'BUST' : k}</div>
+            <div class="fc-val">${(dist[k] * 100).toFixed(1)}%</div>
+          </div>
+        `).join('');
+      } else {
+        document.getElementById('forecastSub').textContent = 'From visible card';
+        forecastGrid.innerHTML = ['17','18','19','20','21','BJ','BUST'].map(k => `
+          <div class="fc-cell ${k === 'BUST' ? 'bust-cell' : ''}">
+            <div class="fc-label">${k}</div><div class="fc-val">—</div>
+          </div>
+        `).join('');
+      }
+
+      // Recommendation Hero & EV Breakdown
+      const recHero = document.getElementById('recHero');
+      const recTitle = document.getElementById('recActionTitle');
+      const recReason = document.getElementById('recReason');
+      const evList = document.getElementById('evList');
+
+      if (!state.lastAnalysis) {
+        recHero.className = 'rec-hero';
+        recTitle.innerHTML = state.phase === 'resolved' ? 'Round Complete' : (state.phase === 'dealer_resolve' ? 'Dealer Drawing' : 'Select Cards');
+        recReason.textContent = state.phase === 'resolved'
+          ? 'Start the next hand to get live optimal play recommendations.'
+          : (state.phase === 'dealer_resolve'
+            ? 'Tap the cards the dealer draws or use the quick Win / Push / Loss buttons.'
+            : 'Pick the dealer’s 1 visible card and your 2 starting cards to calculate exact Hit, Stand, Double, and Split odds.');
+        evList.innerHTML = ['STAND', 'HIT', 'DOUBLE'].map(name => `
+          <div class="ev-row">
+            <div class="ev-row-top"><span class="ev-name">${name}</span><span class="ev-num">—</span></div>
+            <div class="prob-legend"><span>Awaiting active turn</span></div>
+          </div>
+        `).join('');
+      } else {
+        const a = state.lastAnalysis;
+        const best = a.best;
+        recHero.className = `rec-hero ${best.action}`;
+
+        const bustPct = (a.dealerDist.bust * 100).toFixed(1);
+        recTitle.innerHTML = `<span>${best.label}</span><span style="font-size:14px; font-family:var(--font-mono); color:${best.ev >= 0 ? 'var(--emerald)' : 'var(--amber)'};">EV ${fmtEv(best.ev)}</span>`;
+        const edge = a.secondBest ? (best.ev - a.secondBest.ev).toFixed(3) : '0.000';
+        recReason.innerHTML = `Against dealer <strong>${state.dealerCards[0].rank}</strong> (${bustPct}% dealer bust), <strong>${best.label}</strong> leads ${a.secondBest ? `<strong>${a.secondBest.label}</strong> by <strong>+${edge} EV</strong>` : 'all options'}.`;
+
+        const rows = [
+          { key: 'stand', title: 'STAND', data: a.stand, available: true },
+          { key: 'hit', title: 'HIT', data: a.hit, available: true },
+          { key: 'double', title: 'DOUBLE', data: a.double, available: a.canDouble },
+          ...(a.canSplit ? [{ key: 'split', title: 'SPLIT (2 Hands)', data: a.split, available: true }] : []),
+          ...(a.canSurrender ? [{ key: 'surrender', title: 'SURRENDER', data: a.surrender, available: true }] : [])
+        ];
+
+        evList.innerHTML = rows.map(r => {
+          if (!r.available || !r.data) {
+            return `
+              <div class="ev-row disabled-row">
+                <div class="ev-row-top">
+                  <span class="ev-name">${r.title} <span style="font-size:10px; color:var(--text-muted);">(Turn 1 only)</span></span>
+                  <span class="ev-num">Locked</span>
+                </div>
+              </div>
+            `;
+          }
+          const isBest = best.action === r.key;
+          const w = (r.data.win * 100).toFixed(1);
+          const p = (r.data.push * 100).toFixed(1);
+          const l = (r.data.loss * 100).toFixed(1);
+          return `
+            <div class="ev-row ${isBest ? 'best' : ''}">
+              <div class="ev-row-top">
+                <span class="ev-name">${r.title} ${isBest ? '<span class="ev-tag">OPTIMAL</span>' : ''}</span>
+                <span class="ev-num ${r.data.ev >= 0 ? 'pos' : 'neg'}">EV ${fmtEv(r.data.ev)}</span>
+              </div>
+              <div class="prob-bar">
+                <div class="prob-win" style="width:${w}%"></div>
+                <div class="prob-push" style="width:${p}%"></div>
+                <div class="prob-loss" style="width:${l}%"></div>
+              </div>
+              <div class="prob-legend">
+                ${r.key === 'surrender'
+                  ? `<span style="color:var(--rose);">Returns 50% of bet (-0.500u)</span>`
+                  : `<span style="color:var(--emerald);">Win ${w}%</span><span style="color:var(--amber);">Push ${p}%</span><span style="color:var(--rose);">Loss ${l}%</span>`
+                }
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      // History Strip
+      const hist = document.getElementById('historyStrip');
+      hist.innerHTML = state.history.length === 0
+        ? `<span style="font-size:11px; color:var(--text-muted);">Recent hands will appear here.</span>`
+        : state.history.map(h => `<span class="hist-pill ${h.type}">${h.label}</span>`).join('');
+    }
+
+    // Keyboard Shortcuts
+    document.addEventListener('keydown', (e) => {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      const k = e.key.toLowerCase();
+
+      if (k === 'z' || k === 'backspace') {
+        e.preventDefault();
+        undoLastAction();
+        return;
+      }
+      if (k === 'n') {
+        startNewHand(state.phase !== 'resolved');
+        return;
+      }
+
+      const pickPhases = ['setup', 'hit_pick', 'double_pick', 'split_pick', 'dealer_resolve'];
+      if (pickPhases.includes(state.phase)) {
+        if (k >= '2' && k <= '9') pickCard(parseInt(k, 10), k);
+        else if (k === '0' || k === '1' || k === 't') pickCard(10, '10');
+        else if (k === 'a') pickCard(11, 'A');
+      } else if (state.phase === 'player_turn') {
+        if (k === 'h') playerHit();
+        else if (k === 's') playerStand();
+        else if (k === 'd') playerDouble();
+        else if (k === 'p') playerSplit();
+        else if (k === 'r') playerSurrender();
+      }
+    });
+
+    buildShoe(6);
+    renderAll();
   </script>
 </body>
 </html>
